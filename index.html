@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Ball Merge Clicker</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <div class="header">
+      <div class="settings-icons">
+        <button id="settingsBtn">⚙️</button>
+        <button id="paintBtn">🎨</button>
+        <button id="achievementBtn">🏆</button>
+        <button id="minigameBtn">🎲</button>
+        <button id="updateLogBtn">📋</button>
+      </div>
+      <div class="money">0 $</div>
+      <div class="level">Level 7</div>
+    </div>
+
+    <!-- Game Area -->
+    <div class="game-area" id="gameArea">
+      <div class="pin-grid"></div>
+    </div>
+
+    <!-- Sidebar Left -->
+    <div class="sidebar-left">
+      <button class="auto-spawn" id="autoSpawnBtn">🔄 AUTO SPAWN</button>
+      <button class="max">🟦 MAX</button>
+      <button class="x3">x3</button>
+    </div>
+
+    <!-- Sidebar Right -->
+    <div class="sidebar-right">
+      <button class="upgrade" data-upgrade="addBall">
+        ➕ ADD BALL <span class="price" id="addBallPrice">1.8K $</span>
+      </button>
+      <button class="upgrade" data-upgrade="ballProfit">
+        💰 BALL PROFIT <span class="price" id="ballProfitPrice">66.7K $</span>
+      </button>
+      <button class="upgrade" data-upgrade="addPin">
+        🟣 ADD PIN <span class="price" id="addPinPrice">47.6K $</span>
+      </button>
+      <button class="upgrade" data-upgrade="mergePins">
+        ⬆️ MERGE PINS <span class="price" id="mergePinsPrice">119.2K $</span>
+      </button>
+    </div>
+
+    <!-- Settings Modal -->
+    <div class="modal" id="settingsModal">
+      <div class="modal-content">
+        <span class="close">&times;</span>
+        <h2>SETTINGS</h2>
+        <div class="setting-row">
+          <label>Music</label>
+          <input type="range" min="0" max="100" value="50" id="musicSlider">
+        </div>
+        <div class="setting-row">
+          <label>Sfx</label>
+          <input type="range" min="0" max="100" value="50" id="sfxSlider">
+        </div>
+        <!-- Reset Progress Button -->
+        <div class="setting-row">
+          <button id="resetProgressBtn" class="reset-btn">🔄 RESET PROGRESS</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Achievement Modal -->
+    <div class="modal" id="achievementModal">
+      <div class="modal-content">
+        <span class="close-achievement">&times;</span>
+        <h2>ACHIEVEMENTS</h2>
+        <div id="achievementList">
+          <!-- Achievement list will be generated here -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Mini Game Modal -->
+    <div class="modal" id="minigameModal">
+      <div class="modal-content">
+        <span class="close-minigame">&times;</span>
+        <h2>MINI GAME: TEBAK WARNA BOLA</h2>
+        <div class="mode-toggle">
+          <label>Mode Hard: </label>
+          <input type="checkbox" id="hardModeToggle">
+        </div>
+        <div id="minigameContent">
+          <div id="ballDisplay" class="ball-display"></div>
+          <div id="colorOptions" class="color-options"></div>
+          <div id="minigameResult" class="minigame-result"></div>
+          <div class="streak-display">Streak: <span>0</span></div>
+          <button id="minigamePlayBtn" class="minigame-play-btn">Main Lagi</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Update Log Modal -->
+    <div class="modal" id="updateLogModal">
+      <div class="modal-content">
+        <span class="close-update-log">&times;</span>
+        <h2>UPDATE LOG</h2>
+        <div id="updateLogContent">
+          <!-- Update log content will be generated here -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Achievement Notification Container -->
+  <div id="achievementNotificationContainer"></div>
+
+  <script src="script.js"></script>
+</body>
+</html>
