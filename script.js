@@ -1,10 +1,14 @@
-// Game State
+// script.js - BALL MERGE CLICKER - FINAL FIX VERSION - OPTIMIZED RENDER
+
+// =================================================================
+// 1. GAME STATE
+// =================================================================
 let money = 100000;
 let level = 7;
 let ballProfit = 1;
 let availableBalls = 5;
 let pins = [];
-let balls = [];
+let balls = []; // Array bola, setiap bola sekarang memiliki properti .element
 let autoSpawnActive = false;
 let autoSpawnInterval = null;
 let autoSpawnRate = 1000;
@@ -66,13 +70,31 @@ const updateLog = [
       "Tambah notifikasi update saat ada versi baru.",
       "Tambah fitur reset progress."
     ]
+  },
+  {
+    version: "Beta 1.3.1",
+    changes: [
+      "Implementasi tombol MAX dan x3 di sidebar kiri.",
+      "MAX men-spawn semua bola yang tersedia.",
+      "x3 menggandakan kecepatan semua bola secara instan."
+    ]
+  },
+  {
+    version: "Beta 1.4.0",
+    changes: [
+      "Optimasi performa render bola.",
+      "Gunakan referensi elemen bola untuk update cepat.",
+      "Hapus renderPins() dari game loop utama."
+    ]
   }
 ];
 
 // Current version
-const currentVersion = "Beta 1.3.0";
+const currentVersion = "Beta 1.4.0";
 
-// DOM Elements
+// =================================================================
+// 2. DOM ELEMENTS & CONSTANTS
+// =================================================================
 const moneyEl = document.querySelector('.money');
 const levelEl = document.querySelector('.level');
 const gameArea = document.getElementById('gameArea');
@@ -99,6 +121,8 @@ const hardModeToggle = document.getElementById('hardModeToggle');
 const streakDisplay = document.querySelector('.streak-display span');
 const updateLogContent = document.getElementById('updateLogContent');
 const resetProgressBtn = document.getElementById('resetProgressBtn');
+const maxBtn = document.querySelector('.sidebar-left .max');
+const x3Btn = document.querySelector('.sidebar-left .x3');
 
 // Update Notification Element
 const updateNotification = document.createElement('div');
@@ -111,104 +135,9 @@ updateNotification.innerHTML = `
 `;
 document.body.appendChild(updateNotification);
 
-// Load game
-window.addEventListener('load', () => {
-  const saved = localStorage.getItem('bounceGameState');
-  if (saved) {
-    const state = JSON.parse(saved);
-    money = state.money || 100000;
-    level = state.level || 7;
-    ballProfit = state.ballProfit || 1;
-    availableBalls = state.availableBalls || 5;
-    pins = state.pins || [];
-    balls = state.balls || [];
-    autoSpawnActive = state.autoSpawnActive || false;
-    totalMerges = state.totalMerges || 0;
-    totalBounces = state.totalBounces || 0;
-    currentStreak = state.currentStreak || 0;
-    isHardMode = state.isHardMode || false;
-
-    if (autoSpawnActive) {
-      startAutoSpawn();
-    }
-  }
-
-  const savedAchievements = localStorage.getItem('achievements');
-  if (savedAchievements) {
-    achievements = { ...achievements, ...JSON.parse(savedAchievements) };
-  }
-
-  // Check for update
-  const lastVersion = localStorage.getItem('lastVersion') || 'Beta 1.0.0';
-  if (lastVersion !== currentVersion) {
-    showUpdateNotification();
-  }
-
-  updateUI();
-  renderPins();
-  startGameLoop();
-});
-
-// Save game
-window.addEventListener('beforeunload', () => {
-  saveGame();
-});
-
-function saveGame() {
-  localStorage.setItem(
-    'bounceGameState',
-    JSON.stringify({
-      money,
-      level,
-      ballProfit,
-      pins,
-      balls,
-      availableBalls,
-      autoSpawnActive,
-      totalMerges,
-      totalBounces,
-      currentStreak,
-      isHardMode
-    })
-  );
-  localStorage.setItem('achievements', JSON.stringify(achievements));
-  localStorage.setItem('lastVersion', currentVersion);
-}
-
-// Update UI
-function updateUI() {
-  moneyEl.textContent = formatMoney(money);
-  levelEl.textContent = `Level ${level}`;
-
-  // Update prices
-  document.getElementById('addBallPrice').textContent = formatMoney(calculateUpgradeCost('addBall'));
-  document.getElementById('ballProfitPrice').textContent = formatMoney(calculateUpgradeCost('ballProfit'));
-  document.getElementById('addPinPrice').textContent = formatMoney(calculateUpgradeCost('addPin'));
-  document.getElementById('mergePinsPrice').textContent = formatMoney(calculateUpgradeCost('mergePins'));
-
-  // Update button states
-  document.querySelectorAll('.upgrade').forEach(btn => {
-    const upgrade = btn.dataset.upgrade;
-    const cost = calculateUpgradeCost(upgrade);
-    btn.disabled = money < cost;
-  });
-
-  // 🛠️ PERBAIKAN: Update auto spawn button
-  autoSpawnBtn.disabled = !canAffordAutoSpawn();
-  autoSpawnBtn.textContent = autoSpawnActive ? '🔄 AUTO SPAWN (ON)' : '🔄 AUTO SPAWN';
-
-  // Update streak display
-  streakDisplay.textContent = currentStreak;
-
-  // Update hard mode toggle
-  hardModeToggle.checked = isHardMode;
-
-  // 🛠️ PERBAIKAN: Update achievement list if modal is open
-  if (achievementModal.style.display === 'flex') {
-    renderAchievements();
-  }
-}
-
+// =================================================================
+// 3. UTILITY FUNCTIONS
+// =================================================================
 function formatMoney(num) {
   if (num >= 1e12) return (num / 1e12).toFixed(1) + 'T $';
   if (num >= 1e9) return (num / 1e9).toFixed(1) + 'B $';
@@ -238,18 +167,10 @@ function calculateUpgradeCost(type) {
   }
 }
 
-// 🛠️ PERBAIKAN: Fungsi untuk cek apakah bisa afford auto spawn
-function canAffordAutoSpawn() {
-  // Misalnya auto spawn butuh 10K
-  return money >= 10000;
-}
-
-// Get ball size based on value
 function getBallSize(value) {
   return 28 + (value / 2);
 }
 
-// Get gradient color based on value
 function getBallGradient(value) {
   const gradients = {
     2: 'linear-gradient(45deg, #FF5722, #FF9800)',
@@ -273,7 +194,6 @@ function getBallGradient(value) {
   }
 }
 
-// Get ball color name for mini game (simplified)
 function getBallColorName(value) {
   const colors = {
     2: 'Merah',
@@ -296,156 +216,34 @@ function getBallColorName(value) {
   }
 }
 
-// Get bloom size based on value
 function getBloomSize(value) {
   return Math.min(50, 15 + Math.log2(value) * 5);
 }
 
-// Get halo size based on value
 function getHaloSize(value) {
   return Math.min(80, 30 + Math.log2(value) * 8);
 }
 
-// Get shine speed based on value
 function getShineSpeed(value) {
   return Math.max(1, 3 - Math.log2(value) * 0.2);
 }
 
-// Get glow intensity based on value
 function getGlowIntensity(value) {
   return Math.min(10 + Math.log2(value) * 2, 30);
 }
 
-// Get pulsing speed based on value
 function getBallPulseSpeed(value) {
   return Math.max(0.5, 2 - Math.log2(value) * 0.1);
 }
 
-// Get sparkle count based on value
 function getBallSparkleCount(value) {
   return Math.min(5, Math.floor(Math.log2(value) / 2));
 }
 
-// Get ball speed multiplier based on value
 function getBallSpeedMultiplier(value) {
   return 1 + Math.log2(value) * 0.1;
 }
 
-// Create sparkle effect
-function createSparkle(x, y, color) {
-  const sparkle = document.createElement('div');
-  sparkle.className = 'sparkle';
-  sparkle.style.left = `${x}px`;
-  sparkle.style.top = `${y}px`;
-  sparkle.style.background = color;
-
-  gameArea.appendChild(sparkle);
-
-  // Remove after animation
-  setTimeout(() => {
-    sparkle.remove();
-  }, 1000);
-}
-
-// Render pins (grid of dots)
-function renderPins() {
-  const pinGrid = document.querySelector('.pin-grid');
-  pinGrid.innerHTML = '';
-
-  for (let i = 0; i < 25; i++) {
-    const dot = document.createElement('div');
-    dot.className = 'pin-dot';
-    pinGrid.appendChild(dot);
-  }
-
-  // Remove old balls, trails, and sparkles
-  document.querySelectorAll('.ball, .trail-dot, .sparkle').forEach(b => b.remove());
-
-  // Render balls
-  balls.forEach(ball => {
-    const ballEl = document.createElement('div');
-    ballEl.className = 'ball';
-    ballEl.style.left = `${ball.x}px`;
-    ballEl.style.top = `${ball.y}px`;
-    ballEl.style.width = `${getBallSize(ball.value)}px`;
-    ballEl.style.height = `${getBallSize(ball.value)}px`;
-    ballEl.style.borderRadius = '50%';
-    ballEl.style.background = getBallGradient(ball.value);
-    // Set glow
-    const intensity = getGlowIntensity(ball.value);
-    ballEl.style.boxShadow = `0 0 ${intensity}px ${getBallColorFromGradient(ball.value)}, 0 0 ${intensity * 2}px ${getBallColorFromGradient(ball.value)}`;
-    // Set pulsing animation
-    const pulseSpeed = getBallPulseSpeed(ball.value);
-    ballEl.style.animation = `pulse ${pulseSpeed}s infinite`;
-    ballEl.textContent = ball.value;
-    ballEl.dataset.id = balls.indexOf(ball);
-
-    // Add bloom effect
-    const bloomSize = getBloomSize(ball.value);
-    const bloomEl = document.createElement('div');
-    bloomEl.style.position = 'absolute';
-    bloomEl.style.top = '50%';
-    bloomEl.style.left = '50%';
-    bloomEl.style.transform = 'translate(-50%, -50%)';
-    bloomEl.style.width = `${getBallSize(ball.value) + bloomSize}px`;
-    bloomEl.style.height = `${getBallSize(ball.value) + bloomSize}px`;
-    bloomEl.style.borderRadius = '50%';
-    bloomEl.style.background = getBallGradient(ball.value);
-    bloomEl.style.filter = `blur(${bloomSize / 3}px)`;
-    bloomEl.style.zIndex = '-1';
-    ballEl.appendChild(bloomEl);
-
-    // Add halo effect
-    const haloSize = getHaloSize(ball.value);
-    const haloEl = document.createElement('div');
-    haloEl.style.position = 'absolute';
-    haloEl.style.top = '50%';
-    haloEl.style.left = '50%';
-    haloEl.style.transform = 'translate(-50%, -50%)';
-    haloEl.style.width = `${getBallSize(ball.value) + haloSize}px`;
-    haloEl.style.height = `${getBallSize(ball.value) + haloSize}px`;
-    haloEl.style.borderRadius = '50%';
-    haloEl.style.background = getBallGradient(ball.value);
-    haloEl.style.filter = `blur(${haloSize / 4}px)`;
-    haloEl.style.zIndex = '-2';
-    ballEl.appendChild(haloEl);
-
-    // Add shine effect
-    const shineSpeed = getShineSpeed(ball.value);
-    const shineEl = document.createElement('div');
-    shineEl.className = 'shine';
-    const style = document.createElement('style');
-    style.textContent = `
-      .shine-${ball.value} {
-        animation: rotate ${shineSpeed}s linear infinite;
-      }
-    `;
-    document.head.appendChild(style);
-    shineEl.classList.add(`shine-${ball.value}`);
-    ballEl.appendChild(shineEl);
-
-    // Add value label above
-    const valueLabel = document.createElement('div');
-    valueLabel.className = 'ball-value';
-    valueLabel.textContent = ball.value;
-    ballEl.appendChild(valueLabel);
-
-    gameArea.appendChild(ballEl);
-
-    // Render trail
-    ball.trail.forEach((trail, j) => {
-      const trailEl = document.createElement('div');
-      trailEl.className = 'trail-dot';
-      trailEl.style.left = `${trail.x - 3}px`;
-      trailEl.style.top = `${trail.y - 3}px`;
-      trailEl.style.backgroundColor = `rgba(${hexToRgb(getBallColorFromGradient(ball.value))}, ${trail.opacity})`;
-
-      gameArea.appendChild(trailEl);
-    });
-  });
-}
-
-// Helper: Extract a color from gradient for glow/trail (use first color in gradient)
 function getBallColorFromGradient(value) {
   const gradients = {
     2: '#FF5722',
@@ -468,7 +266,6 @@ function getBallColorFromGradient(value) {
   }
 }
 
-// Helper: Convert hex to rgb
 function hexToRgb(hex) {
   const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
   return result
@@ -476,63 +273,26 @@ function hexToRgb(hex) {
     : '255, 255, 255';
 }
 
-// Add Pin
-document.querySelector('[data-upgrade="addPin"]').addEventListener('click', () => {
-  const cost = calculateUpgradeCost('addPin');
-  if (money >= cost) {
-    money -= cost;
-    addPin();
-    updateUI();
-  }
-});
+// Create sparkle effect
+function createSparkle(x, y, color) {
+  const sparkle = document.createElement('div');
+  sparkle.className = 'sparkle';
+  sparkle.style.left = `${x}px`;
+  sparkle.style.top = `${y}px`;
+  sparkle.style.background = color;
 
-function addPin() {
-  availableBalls += 1;
-  updateUI();
+  gameArea.appendChild(sparkle);
+
+  // Remove after animation
+  setTimeout(() => {
+    sparkle.remove();
+  }, 1000);
 }
 
-// Upgrade handlers
-document.querySelectorAll('.upgrade').forEach(btn => {
-  btn.addEventListener('click', () => {
-    const upgrade = btn.dataset.upgrade;
-    const cost = calculateUpgradeCost(upgrade);
-
-    if (money >= cost) {
-      money -= cost;
-      applyUpgrade(upgrade);
-      updateUI();
-    }
-  });
-});
-
-function applyUpgrade(type) {
-  switch (type) {
-    case 'addBall':
-      availableBalls += 1;
-      spawnBall(); // 🛠️ PERBAIKAN: Spawn bola setelah beli
-      break;
-    case 'ballProfit':
-      ballProfit += 1;
-      break;
-    case 'addPin':
-      availableBalls += 1;
-      break;
-    case 'mergePins':
-      if (pins.length >= 2) {
-        mergePins();
-      } else {
-        alert("You need at least 2 pins to merge!");
-      }
-      break;
-  }
-  updateUI(); // 🛠️ PERBAIKAN: Panggil updateUI() setelah semua perubahan state
-}
-
-function mergePins() {
-  alert("Merge Pins feature coming soon!");
-}
-
-// Spawn Ball
+// =================================================================
+// 4. GAME LOGIC
+// =================================================================
+// Spawn Ball - Sekarang membuat elemen bola dan menyimpannya
 function spawnBall() {
   if (availableBalls <= 0) return;
 
@@ -550,8 +310,83 @@ function spawnBall() {
     vy,
     value: 2,
     radius: getBallSize(2) / 2,
-    trail: []
+    trail: [],
+    element: null, // Akan diisi nanti
+    valueLabel: null // Akan diisi nanti
   };
+
+  // Buat elemen bola
+  const ballEl = document.createElement('div');
+  ballEl.className = 'ball';
+  ballEl.style.left = `${ball.x}px`;
+  ballEl.style.top = `${ball.y}px`;
+  ballEl.style.width = `${getBallSize(ball.value)}px`;
+  ballEl.style.height = `${getBallSize(ball.value)}px`;
+  ballEl.style.borderRadius = '50%';
+  ballEl.style.background = getBallGradient(ball.value);
+  // Set glow
+  const intensity = getGlowIntensity(ball.value);
+  ballEl.style.boxShadow = `0 0 ${intensity}px ${getBallColorFromGradient(ball.value)}, 0 0 ${intensity * 2}px ${getBallColorFromGradient(ball.value)}`;
+  // Set pulsing animation
+  const pulseSpeed = getBallPulseSpeed(ball.value);
+  ballEl.style.animation = `pulse ${pulseSpeed}s infinite`;
+  ballEl.textContent = ball.value;
+
+  // Add bloom effect
+  const bloomSize = getBloomSize(ball.value);
+  const bloomEl = document.createElement('div');
+  bloomEl.style.position = 'absolute';
+  bloomEl.style.top = '50%';
+  bloomEl.style.left = '50%';
+  bloomEl.style.transform = 'translate(-50%, -50%)';
+  bloomEl.style.width = `${getBallSize(ball.value) + bloomSize}px`;
+  bloomEl.style.height = `${getBallSize(ball.value) + bloomSize}px`;
+  bloomEl.style.borderRadius = '50%';
+  bloomEl.style.background = getBallGradient(ball.value);
+  bloomEl.style.filter = `blur(${bloomSize / 3}px)`;
+  bloomEl.style.zIndex = '-1';
+  ballEl.appendChild(bloomEl);
+
+  // Add halo effect
+  const haloSize = getHaloSize(ball.value);
+  const haloEl = document.createElement('div');
+  haloEl.style.position = 'absolute';
+  haloEl.style.top = '50%';
+  haloEl.style.left = '50%';
+  haloEl.style.transform = 'translate(-50%, -50%)';
+  haloEl.style.width = `${getBallSize(ball.value) + haloSize}px`;
+  haloEl.style.height = `${getBallSize(ball.value) + haloSize}px`;
+  haloEl.style.borderRadius = '50%';
+  haloEl.style.background = getBallGradient(ball.value);
+  haloEl.style.filter = `blur(${haloSize / 4}px)`;
+  haloEl.style.zIndex = '-2';
+  ballEl.appendChild(haloEl);
+
+  // Add shine effect
+  const shineSpeed = getShineSpeed(ball.value);
+  const shineEl = document.createElement('div');
+  shineEl.className = 'shine';
+  const style = document.createElement('style');
+  style.textContent = `
+    .shine-${ball.value} {
+      animation: rotate ${shineSpeed}s linear infinite;
+    }
+  `;
+  document.head.appendChild(style);
+  shineEl.classList.add(`shine-${ball.value}`);
+  ballEl.appendChild(shineEl);
+
+  // Add value label above
+  const valueLabel = document.createElement('div');
+  valueLabel.className = 'ball-value';
+  valueLabel.textContent = ball.value;
+  ballEl.appendChild(valueLabel);
+
+  gameArea.appendChild(ballEl);
+
+  // Simpan referensi elemen ke objek bola
+  ball.element = ballEl;
+  ball.valueLabel = valueLabel;
 
   balls.push(ball);
   availableBalls--;
@@ -574,7 +409,7 @@ function showCoinPop(x, y, amount) {
   }, 1000);
 }
 
-// Check for mergeable balls
+// Check for mergeable balls - Perbarui logika merge untuk menghapus elemen DOM juga
 function checkMerges() {
   for (let i = balls.length - 1; i >= 0; i--) {
     for (let j = i - 1; j >= 0; j--) {
@@ -606,17 +441,12 @@ function checkMerges() {
           vy: newVy,
           value: newValue,
           radius: getBallSize(newValue) / 2,
-          trail: []
+          trail: [],
+          element: null, // Akan diisi nanti
+          valueLabel: null // Akan diisi nanti
         };
 
-        // Remove old balls
-        balls.splice(Math.max(i, j), 1);
-        balls.splice(Math.min(i, j), 1);
-
-        // Add new ball
-        balls.push(newBall);
-
-        // Add merge effect
+        // Buat elemen bola baru untuk merged ball (mirip spawnBall)
         const newBallEl = document.createElement('div');
         newBallEl.className = 'ball merge-effect';
         newBallEl.style.left = `${newX}px`;
@@ -673,8 +503,8 @@ function checkMerges() {
         shineEl.classList.add(`shine-${newValue}`);
         newBallEl.appendChild(shineEl);
         newBallEl.textContent = newValue;
-        newBallEl.dataset.id = balls.length - 1;
 
+        // Add value label above merged ball
         const valueLabel = document.createElement('div');
         valueLabel.className = 'ball-value';
         valueLabel.textContent = newValue;
@@ -682,9 +512,23 @@ function checkMerges() {
 
         gameArea.appendChild(newBallEl);
 
+        // Simpan referensi elemen ke objek bola baru
+        newBall.element = newBallEl;
+        newBall.valueLabel = valueLabel;
+
+        // Remove old balls (hapus dari array dan DOM)
+        const ballToRemove = balls.splice(Math.max(i, j), 1)[0];
+        if (ballToRemove.element) ballToRemove.element.remove();
+        const ballToRemove2 = balls.splice(Math.min(i, j), 1)[0];
+        if (ballToRemove2.element) ballToRemove2.element.remove();
+
+        // Add new ball
+        balls.push(newBall);
+
+        // Hapus efek merge setelah selesai
         setTimeout(() => {
-          newBallEl.remove();
-          renderPins(); // Re-render to show new ball
+          if (newBallEl) newBallEl.remove();
+          // Tidak perlu renderPins() lagi karena kita update elemen langsung
         }, 500);
 
         // Earn money from merge
@@ -700,14 +544,15 @@ function checkMerges() {
   }
 }
 
-// Game Loop — Update ball positions and check collisions
+// Game Loop — Update ball positions and check collisions - Sekarang hanya update elemen DOM
 function startGameLoop() {
-  setInterval(() => {
+  // Gunakan requestAnimationFrame alih-alih setInterval
+  function gameLoop() {
     balls.forEach((ball, i) => {
-      // Add current position to trail
+      // Add current position to trail (opsional, bisa dihapus untuk performa lebih tinggi)
       ball.trail.push({ x: ball.x + ball.radius, y: ball.y + ball.radius, opacity: 0.8 });
 
-      // Keep trail length max 10
+      // Keep trail length max 10 (opsional)
       if (ball.trail.length > 10) {
         ball.trail.shift();
       }
@@ -716,6 +561,16 @@ function startGameLoop() {
       const speedMult = getBallSpeedMultiplier(ball.value);
       ball.x += ball.vx / speedMult;
       ball.y += ball.vy / speedMult;
+
+      // Update posisi elemen bola secara langsung
+      if (ball.element) {
+        ball.element.style.left = `${ball.x}px`;
+        ball.element.style.top = `${ball.y}px`;
+        // Update nilai label jika berubah (meskipun seharusnya tidak dalam loop ini)
+        if (ball.valueLabel) {
+            ball.valueLabel.textContent = ball.value;
+        }
+      }
 
       // Check boundaries (adjust for ball size)
       const ballSize = getBallSize(ball.value);
@@ -747,9 +602,12 @@ function startGameLoop() {
     // Check for merges
     checkMerges();
 
-    // Re-render everything to update trails and sizes
-    renderPins();
-  }, 50);
+    // Panggil lagi frame berikutnya
+    requestAnimationFrame(gameLoop);
+  }
+
+  // Mulai loop
+  requestAnimationFrame(gameLoop);
 }
 
 function earnMoney(x, y, value) {
@@ -760,7 +618,43 @@ function earnMoney(x, y, value) {
   checkAchievements('money');
 }
 
-// Achievement System
+// =================================================================
+// 5. UPGRADES & ACTIONS
+// =================================================================
+function addPin() {
+  availableBalls += 1;
+  updateUI();
+}
+
+function applyUpgrade(type) {
+  switch (type) {
+    case 'addBall':
+      availableBalls += 1;
+      spawnBall();
+      break;
+    case 'ballProfit':
+      ballProfit += 1;
+      break;
+    case 'addPin':
+      availableBalls += 1;
+      break;
+    case 'mergePins':
+      if (pins.length >= 2) {
+        mergePins();
+      } else {
+        alert("You need at least 2 pins to merge!");
+      }
+      break;
+  }
+}
+
+function mergePins() {
+  alert("Merge Pins feature coming soon!");
+}
+
+// =================================================================
+// 6. ACHIEVEMENTS
+// =================================================================
 function checkAchievements(type, value = null) {
   if (type === 'merge' && !achievements.first_merge.unlocked) {
     achievements.first_merge.unlocked = true;
@@ -790,11 +684,6 @@ function checkAchievements(type, value = null) {
     achievements.bounce_1000.unlocked = true;
     money += achievements.bounce_1000.reward;
     showAchievementNotification(achievements.bounce_1000.name, achievements.bounce_1000.reward);
-  }
-
-  // 🛠️ PERBAIKAN: Update achievement list if modal is open
-  if (achievementModal.style.display === 'flex') {
-    renderAchievements();
   }
 
   updateUI();
@@ -827,6 +716,222 @@ function showAchievementNotification(name, reward) {
       notification.remove();
     }, 300); // Wait for animation to finish
   }, 5000);
+}
+
+// =================================================================
+// 7. MINI GAME
+// =================================================================
+function startMiniGame() {
+  // Reset
+  minigameResult.textContent = '';
+  colorOptionsEl.innerHTML = '';
+
+  // Pick a random ball from the game
+  if (balls.length === 0) {
+    minigameResult.textContent = 'No balls to guess! Merge some first.';
+    return;
+  }
+
+  const randomBall = balls[Math.floor(Math.random() * balls.length)];
+  currentBallColor = getBallColorFromGradient(randomBall.value);
+  currentBallName = getBallColorName(randomBall.value);
+
+  // Display ball
+  ballDisplay.style.background = getBallGradient(randomBall.value);
+  ballDisplay.style.boxShadow = `0 0 15px ${currentBallColor}`;
+
+  // Determine number of options based on mode
+  const numOptions = isHardMode ? 6 : 4;
+  const correctIndex = Math.floor(Math.random() * numOptions);
+  const colors = ['Merah', 'Oranye', 'Kuning', 'Hijau', 'Biru', 'Ungu', 'Pink', 'Cyan', 'Abu', 'Emas'];
+  const options = [];
+
+  for (let i = 0; i < numOptions; i++) {
+    if (i === correctIndex) {
+      options.push(currentBallName);
+    } else {
+      let randomColor;
+      do {
+        randomColor = colors[Math.floor(Math.random() * colors.length)];
+      } while (randomColor === currentBallName || options.includes(randomColor));
+      options.push(randomColor);
+    }
+  }
+
+  // Render options
+  options.forEach(color => {
+    const option = document.createElement('div');
+    option.className = 'color-option';
+    option.style.backgroundColor = getColorHexFromName(color);
+    option.dataset.name = color;
+
+    option.addEventListener('click', () => {
+      if (option.dataset.name === currentBallName) {
+        currentStreak++;
+        const multiplier = isHardMode ? hardModeMultiplier : 1;
+        const reward = (baseReward + (currentStreak * streakBonus)) * multiplier;
+        minigameResult.innerHTML = `Benar! +${formatMoney(reward)}$ (Streak: ${currentStreak}) ${isHardMode ? '<span style="color: red;">[HARD MODE]</span>' : ''}`;
+        minigameResult.style.color = 'green';
+        money += reward;
+        updateUI();
+      } else {
+        minigameResult.innerHTML = `Salah! Jawaban benar: ${currentBallName}. Streak reset. ${isHardMode ? '<span style="color: red;">[HARD MODE]</span>' : ''}`;
+        minigameResult.style.color = 'red';
+        currentStreak = 0; // Reset streak
+        updateUI();
+      }
+
+      // Disable all options
+      document.querySelectorAll('.color-option').forEach(opt => {
+        opt.style.pointerEvents = 'none';
+      });
+    });
+
+    colorOptionsEl.appendChild(option);
+  });
+}
+
+function getColorHexFromName(name) {
+  const colorMap = {
+    'Merah': '#FF5722',
+    'Oranye': '#FF9800',
+    'Kuning': '#FFC107',
+    'Hijau': '#4CAF50',
+    'Biru': '#2196F3',
+    'Ungu': '#9C27B0',
+    'Pink': '#E91E63',
+    'Cyan': '#00BCD4',
+    'Abu': '#607D8B',
+    'Emas': '#FFD700'
+  };
+
+  return colorMap[name] || '#FFFFFF';
+}
+
+// =================================================================
+// 8. UI RENDERING (Hanya render saat spawn/hapus, bukan setiap frame)
+// =================================================================
+function updateUI() {
+  moneyEl.textContent = formatMoney(money);
+  levelEl.textContent = `Level ${level}`;
+
+  // Update prices
+  document.getElementById('addBallPrice').textContent = formatMoney(calculateUpgradeCost('addBall'));
+  document.getElementById('ballProfitPrice').textContent = formatMoney(calculateUpgradeCost('ballProfit'));
+  document.getElementById('addPinPrice').textContent = formatMoney(calculateUpgradeCost('addPin'));
+  document.getElementById('mergePinsPrice').textContent = formatMoney(calculateUpgradeCost('mergePins'));
+
+  // Update button states
+  document.querySelectorAll('.upgrade').forEach(btn => {
+    const upgrade = btn.dataset.upgrade;
+    const cost = calculateUpgradeCost(upgrade);
+    btn.disabled = money < cost;
+  });
+
+  autoSpawnBtn.disabled = !canAffordAutoSpawn();
+  autoSpawnBtn.textContent = autoSpawnActive ? '🔄 AUTO SPAWN (ON)' : '🔄 AUTO SPAWN';
+
+  // Update streak display
+  streakDisplay.textContent = currentStreak;
+
+  // Update hard mode toggle
+  hardModeToggle.checked = isHardMode;
+
+  // Update achievement list if modal is open
+  if (achievementModal.style.display === 'flex') {
+    renderAchievements();
+  }
+}
+
+// Render pins (grid of dots) - Sekarang hanya render sekali saat load
+function renderPins() {
+  const pinGrid = document.querySelector('.pin-grid');
+  pinGrid.innerHTML = '';
+
+  for (let i = 0; i < 25; i++) {
+    const dot = document.createElement('div');
+    dot.className = 'pin-dot';
+    pinGrid.appendChild(dot);
+  }
+
+  // Render balls - Hanya saat awal, setelah load
+  balls.forEach(ball => {
+    // Jika elemen bola belum ada (karena spawnBall sudah membuatnya), buat di sini
+    // Ini untuk kasus saat load game dari localStorage
+    if (!ball.element) {
+        const ballEl = document.createElement('div');
+        ballEl.className = 'ball';
+        ballEl.style.left = `${ball.x}px`;
+        ballEl.style.top = `${ball.y}px`;
+        ballEl.style.width = `${getBallSize(ball.value)}px`;
+        ballEl.style.height = `${getBallSize(ball.value)}px`;
+        ballEl.style.borderRadius = '50%';
+        ballEl.style.background = getBallGradient(ball.value);
+        // Set glow
+        const intensity = getGlowIntensity(ball.value);
+        ballEl.style.boxShadow = `0 0 ${intensity}px ${getBallColorFromGradient(ball.value)}, 0 0 ${intensity * 2}px ${getBallColorFromGradient(ball.value)}`;
+        // Set pulsing animation
+        const pulseSpeed = getBallPulseSpeed(ball.value);
+        ballEl.style.animation = `pulse ${pulseSpeed}s infinite`;
+        ballEl.textContent = ball.value;
+
+        // Add bloom effect
+        const bloomSize = getBloomSize(ball.value);
+        const bloomEl = document.createElement('div');
+        bloomEl.style.position = 'absolute';
+        bloomEl.style.top = '50%';
+        bloomEl.style.left = '50%';
+        bloomEl.style.transform = 'translate(-50%, -50%)';
+        bloomEl.style.width = `${getBallSize(ball.value) + bloomSize}px`;
+        bloomEl.style.height = `${getBallSize(ball.value) + bloomSize}px`;
+        bloomEl.style.borderRadius = '50%';
+        bloomEl.style.background = getBallGradient(ball.value);
+        bloomEl.style.filter = `blur(${bloomSize / 3}px)`;
+        bloomEl.style.zIndex = '-1';
+        ballEl.appendChild(bloomEl);
+
+        // Add halo effect
+        const haloSize = getHaloSize(ball.value);
+        const haloEl = document.createElement('div');
+        haloEl.style.position = 'absolute';
+        haloEl.style.top = '50%';
+        haloEl.style.left = '50%';
+        haloEl.style.transform = 'translate(-50%, -50%)';
+        haloEl.style.width = `${getBallSize(ball.value) + haloSize}px`;
+        haloEl.style.height = `${getBallSize(ball.value) + haloSize}px`;
+        haloEl.style.borderRadius = '50%';
+        haloEl.style.background = getBallGradient(ball.value);
+        haloEl.style.filter = `blur(${haloSize / 4}px)`;
+        haloEl.style.zIndex = '-2';
+        ballEl.appendChild(haloEl);
+
+        // Add shine effect
+        const shineSpeed = getShineSpeed(ball.value);
+        const shineEl = document.createElement('div');
+        shineEl.className = 'shine';
+        const style = document.createElement('style');
+        style.textContent = `
+          .shine-${ball.value} {
+            animation: rotate ${shineSpeed}s linear infinite;
+          }
+        `;
+        document.head.appendChild(style);
+        shineEl.classList.add(`shine-${ball.value}`);
+        ballEl.appendChild(shineEl);
+
+        // Add value label above
+        const valueLabel = document.createElement('div');
+        valueLabel.className = 'ball-value';
+        valueLabel.textContent = ball.value;
+        ballEl.appendChild(valueLabel);
+
+        gameArea.appendChild(ballEl);
+
+        // Simpan referensi elemen ke objek bola
+        ball.element = ballEl;
+        ball.valueLabel = valueLabel;
+    }
+  });
 }
 
 // Render Achievement List
@@ -929,132 +1034,32 @@ function showConfirmationModal(message, onConfirm) {
   };
 }
 
-// Reset Progress
-function resetProgress() {
-  showConfirmationModal("Are you sure you want to reset ALL progress? This cannot be undone.", () => {
-    // Reset all game state
-    money = 0;
-    level = 1;
-    ballProfit = 1;
-    availableBalls = 1; // Start with 1 ball
-    pins = [];
-    balls = [];
-    autoSpawnActive = false;
-    totalMerges = 0;
-    totalBounces = 0;
-    currentStreak = 0;
-    isHardMode = false;
-
-    // Reset achievements
-    for (const key in achievements) {
-      achievements[key].unlocked = false;
-    }
-
-    // Stop auto spawn if active
-    if (autoSpawnInterval) {
-      clearInterval(autoSpawnInterval);
-      autoSpawnInterval = null;
-    }
-
+// =================================================================
+// 9. EVENT LISTENERS & INITIAL SETUP
+// =================================================================
+// Add Pin
+document.querySelector('[data-upgrade="addPin"]').addEventListener('click', () => {
+  const cost = calculateUpgradeCost('addPin');
+  if (money >= cost) {
+    money -= cost;
+    addPin();
     updateUI();
-    renderPins();
-
-    // 🛠️ PERBAIKAN: SAVE GAME SETELAH RESET, BUKAN SEBELUMNYA!
-    saveGame(); // <-- Ini ditaruh di sini, setelah semua state direset
-
-    // Close modal and show notification
-    settingsModal.style.display = 'none';
-    alert("Progress has been reset! Start fresh and have fun!");
-  });
-}
-
-// Mini Game Functions
-function startMiniGame() {
-  // Reset
-  minigameResult.textContent = '';
-  colorOptionsEl.innerHTML = '';
-
-  // Pick a random ball from the game
-  if (balls.length === 0) {
-    minigameResult.textContent = 'No balls to guess! Merge some first.';
-    return;
   }
+});
 
-  const randomBall = balls[Math.floor(Math.random() * balls.length)];
-  currentBallColor = getBallColorFromGradient(randomBall.value);
-  currentBallName = getBallColorName(randomBall.value);
+// Upgrade handlers
+document.querySelectorAll('.upgrade').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const upgrade = btn.dataset.upgrade;
+    const cost = calculateUpgradeCost(upgrade);
 
-  // Display ball
-  ballDisplay.style.background = getBallGradient(randomBall.value);
-  ballDisplay.style.boxShadow = `0 0 15px ${currentBallColor}`;
-
-  // Determine number of options based on mode
-  const numOptions = isHardMode ? 6 : 4;
-  const correctIndex = Math.floor(Math.random() * numOptions);
-  const colors = ['Merah', 'Oranye', 'Kuning', 'Hijau', 'Biru', 'Ungu', 'Pink', 'Cyan', 'Abu', 'Emas'];
-  const options = [];
-
-  for (let i = 0; i < numOptions; i++) {
-    if (i === correctIndex) {
-      options.push(currentBallName);
-    } else {
-      let randomColor;
-      do {
-        randomColor = colors[Math.floor(Math.random() * colors.length)];
-      } while (randomColor === currentBallName || options.includes(randomColor));
-      options.push(randomColor);
+    if (money >= cost) {
+      money -= cost;
+      applyUpgrade(upgrade);
+      updateUI();
     }
-  }
-
-  // Render options
-  options.forEach(color => {
-    const option = document.createElement('div');
-    option.className = 'color-option';
-    option.style.backgroundColor = getColorHexFromName(color);
-    option.dataset.name = color;
-
-    option.addEventListener('click', () => {
-      if (option.dataset.name === currentBallName) {
-        currentStreak++;
-        const multiplier = isHardMode ? hardModeMultiplier : 1;
-        const reward = (baseReward + (currentStreak * streakBonus)) * multiplier;
-        minigameResult.innerHTML = `Benar! +${formatMoney(reward)}$ (Streak: ${currentStreak}) ${isHardMode ? '<span style="color: red;">[HARD MODE]</span>' : ''}`;
-        minigameResult.style.color = 'green';
-        money += reward;
-        updateUI();
-      } else {
-        minigameResult.innerHTML = `Salah! Jawaban benar: ${currentBallName}. Streak reset. ${isHardMode ? '<span style="color: red;">[HARD MODE]</span>' : ''}`;
-        minigameResult.style.color = 'red';
-        currentStreak = 0; // Reset streak
-        updateUI();
-      }
-
-      // Disable all options
-      document.querySelectorAll('.color-option').forEach(opt => {
-        opt.style.pointerEvents = 'none';
-      });
-    });
-
-    colorOptionsEl.appendChild(option);
   });
-}
-
-function getColorHexFromName(name) {
-  const colorMap = {
-    'Merah': '#FF5722',
-    'Oranye': '#FF9800',
-    'Kuning': '#FFC107',
-    'Hijau': '#4CAF50',
-    'Biru': '#2196F3',
-    'Ungu': '#9C27B0',
-    'Pink': '#E91E63',
-    'Cyan': '#00BCD4',
-    'Abu': '#607D8B',
-    'Emas': '#FFD700'
-  };
-
-  return colorMap[name] || '#FFFFFF';
-}
+});
 
 // Add Event Listeners for Mini Game Modal
 minigameBtn.addEventListener('click', () => {
@@ -1063,11 +1068,6 @@ minigameBtn.addEventListener('click', () => {
 });
 
 minigamePlayBtn.addEventListener('click', () => {
-  // 🛠️ PERBAIKAN: Tutup modal kalau gak ada bola
-  if (balls.length === 0) {
-    minigameModal.style.display = 'none';
-    return;
-  }
   startMiniGame();
 });
 
@@ -1077,8 +1077,6 @@ closeMinigameModal.addEventListener('click', () => {
 
 hardModeToggle.addEventListener('change', () => {
   isHardMode = hardModeToggle.checked;
-  // 🛠️ PERBAIKAN: Simpan ke localStorage juga
-  saveGame();
   updateUI();
 });
 
@@ -1122,4 +1120,182 @@ window.addEventListener('click', (e) => {
   }
 });
 
-updateUI();
+// Auto Spawn Button
+autoSpawnBtn.addEventListener('click', () => {
+  if (autoSpawnActive) {
+    stopAutoSpawn();
+  } else {
+    startAutoSpawn();
+  }
+});
+
+function startAutoSpawn() {
+  autoSpawnActive = true;
+  autoSpawnInterval = setInterval(() => {
+    if (availableBalls > 0) {
+      spawnBall();
+    }
+  }, autoSpawnRate);
+  updateUI();
+}
+
+function stopAutoSpawn() {
+  autoSpawnActive = false;
+  if (autoSpawnInterval) {
+    clearInterval(autoSpawnInterval);
+    autoSpawnInterval = null;
+  }
+  updateUI();
+}
+
+function canAffordAutoSpawn() {
+  return money >= 10000;
+}
+
+// --- IMPLEMENTASI TOMBOL MAX & x3 ---
+// MAX Button
+maxBtn.addEventListener('click', () => {
+  // Spawn semua bola yang tersedia sekaligus
+  while (availableBalls > 0) {
+    spawnBall();
+  }
+  updateUI(); // Pastikan UI diperbarui setelah spawn
+});
+
+// x3 Button
+x3Btn.addEventListener('click', () => {
+  // Gandakan kecepatan semua bola yang aktif sebesar 3x
+  balls.forEach(ball => {
+    // Kalikan kecepatan dengan 3
+    // Kita kalikan vx dan vy langsung agar efek terlihat langsung
+    // Pastikan tidak melebihi batas maksimum yang wajar
+    const newVx = ball.vx * 3;
+    const newVy = ball.vy * 3;
+    // Batasi kecepatan maksimum untuk mencegah bola terlalu cepat
+    const maxSpeed = 30; // Atur kecepatan maksimum yang wajar
+    const currentSpeed = Math.sqrt(newVx * newVx + newVy * newVy);
+    if (currentSpeed > maxSpeed) {
+      const scale = maxSpeed / currentSpeed;
+      ball.vx = newVx * scale;
+      ball.vy = newVy * scale;
+    } else {
+       ball.vx = newVx;
+       ball.vy = newVy;
+    }
+  });
+  // Tidak perlu updateUI() untuk perubahan kecepatan
+});
+// --- AKHIR IMPLEMENTASI ---
+
+function resetProgress() {
+  showConfirmationModal("Are you sure you want to reset ALL progress? This cannot be undone.", () => {
+    // Reset all game state
+    money = 0;
+    level = 1;
+    ballProfit = 1;
+    availableBalls = 1; // Start with 1 ball
+    pins = [];
+    balls = [];
+    autoSpawnActive = false;
+    totalMerges = 0;
+    totalBounces = 0;
+    currentStreak = 0;
+    isHardMode = false;
+
+    // Reset achievements
+    for (const key in achievements) {
+      achievements[key].unlocked = false;
+    }
+
+    // Stop auto spawn if active
+    if (autoSpawnInterval) {
+      clearInterval(autoSpawnInterval);
+      autoSpawnInterval = null;
+    }
+
+    // Hapus semua elemen bola dari DOM
+    document.querySelectorAll('.ball').forEach(b => b.remove());
+
+    updateUI();
+    renderPins(); // Render ulang grid dan bola kosong (atau hanya grid)
+    saveGame();
+
+    // Close modal and show notification
+    settingsModal.style.display = 'none';
+    alert("Progress has been reset! Start fresh and have fun!");
+  });
+}
+
+// Load game
+window.addEventListener('load', () => {
+  const saved = localStorage.getItem('bounceGameState');
+  if (saved) {
+    const state = JSON.parse(saved);
+    money = state.money || 100000;
+    level = state.level || 7;
+    ballProfit = state.ballProfit || 1;
+    availableBalls = state.availableBalls || 5;
+    pins = state.pins || [];
+    balls = state.balls || []; // Array bola dari localStorage
+    autoSpawnActive = state.autoSpawnActive || false;
+    totalMerges = state.totalMerges || 0;
+    totalBounces = state.totalBounces || 0;
+    currentStreak = state.currentStreak || 0;
+    isHardMode = state.isHardMode || false;
+
+    if (autoSpawnActive) {
+      startAutoSpawn();
+    }
+  }
+
+  const savedAchievements = localStorage.getItem('achievements');
+  if (savedAchievements) {
+    achievements = { ...achievements, ...JSON.parse(savedAchievements) };
+  }
+
+  // Check for update
+  const lastVersion = localStorage.getItem('lastVersion') || 'Beta 1.0.0';
+  if (lastVersion !== currentVersion) {
+    showUpdateNotification();
+  }
+
+  updateUI();
+  renderPins(); // Render grid dan bola dari state
+  startGameLoop(); // Mulai game loop
+
+  // Setup event listeners are defined above
+});
+
+// Save game
+window.addEventListener('beforeunload', () => {
+  saveGame();
+});
+
+function saveGame() {
+  // Hapus referensi elemen DOM dari objek bola sebelum disimpan
+  const ballsToSave = balls.map(ball => {
+    const { element, valueLabel, ...ballData } = ball; // Hanya ambil data, bukan elemen DOM
+    return ballData;
+  });
+
+  localStorage.setItem(
+    'bounceGameState',
+    JSON.stringify({
+      money,
+      level,
+      ballProfit,
+      pins,
+      balls: ballsToSave, // Simpan data bola tanpa elemen
+      availableBalls,
+      autoSpawnActive,
+      totalMerges,
+      totalBounces,
+      currentStreak,
+      isHardMode
+    })
+  );
+  localStorage.setItem('achievements', JSON.stringify(achievements));
+  localStorage.setItem('lastVersion', currentVersion);
+}
+
+// updateUI(); // Panggil updateUI setelah semua event listener dan fungsi lainnya didefinisikan

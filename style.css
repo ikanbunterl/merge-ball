@@ -225,6 +225,7 @@ body {
   100% { opacity: 0; transform: scale(0.2); }
 }
 
+/* Sidebar */
 .sidebar-left, .sidebar-right {
   width: 250px;
   padding: 20px;
@@ -485,76 +486,6 @@ body {
 .achievement-desc {
   font-size: 0.9rem;
   color: #aaa;
-}
-
-#minigameBtn {
-  background: none;
-  border: none;
-  font-size: 1.5rem;
-  cursor: pointer;
-  color: white;
-}
-
-#minigameContent {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 20px;
-}
-
-.ball-display {
-  width: 100px;
-  height: 100px;
-  border-radius: 50%;
-  margin: 20px auto;
-  box-shadow: 0 0 15px currentColor;
-}
-
-.color-options {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 10px;
-  margin-top: 20px;
-}
-
-.color-option {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  cursor: pointer;
-  border: 2px solid transparent;
-  transition: transform 0.2s, border-color 0.2s;
-}
-
-.color-option:hover {
-  transform: scale(1.1);
-}
-
-.color-option.selected {
-  border-color: white;
-  box-shadow: 0 0 10px white;
-}
-
-.minigame-result {
-  font-size: 1.2rem;
-  font-weight: bold;
-  margin: 10px 0;
-  min-height: 30px;
-}
-
-.minigame-play-btn {
-  padding: 10px 20px;
-  background: #4CAF50;
-  color: white;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-  font-size: 1rem;
-}
-
-.minigame-play-btn:hover {
-  background: #45a049;
 }
 
 #minigameBtn {
@@ -928,129 +859,220 @@ body {
   color: white;
 }
 
-/* Update Notification */
-#updateNotification {
-  position: fixed;
-  bottom: 20px;
-  right: 20px;
-  background: rgba(0, 0, 0, 0.8);
-  border: 2px solid gold;
-  border-radius: 10px;
-  padding: 15px;
-  color: white;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  z-index: 1001;
-  transition: transform 0.3s ease, opacity 0.3s ease;
-  box-shadow: 0 0 15px rgba(255, 215, 0, 0.5);
-  cursor: pointer;
-  transform: translateY(100%);
-  opacity: 0;
+#gameArea {
+    touch-action: none;
 }
 
-#updateNotification.show {
-  transform: translateY(0);
-  opacity: 1;
+/* Media Query untuk layar kecil (misalnya ponsel) */
+@media (max-width: 768px) {
+    /* Atur container agar mengisi layar penuh */
+    .container {
+        height: 100vh;
+        flex-direction: column; /* Susun header, game area, dan sidebar secara vertikal */
+        overflow: auto; /* Aktifkan scroll jika isi terlalu panjang */
+    }
+
+    /* Header */
+    .header {
+        position: relative; /* Ubah dari absolute agar mengikuti alur */
+        top: auto;
+        left: auto;
+        width: 100%;
+        justify-content: space-between; /* Distribusikan elemen header */
+        padding: 10px;
+        box-sizing: border-box;
+        flex-wrap: wrap; /* Izinkan wrap jika terlalu lebar */
+        gap: 10px; /* Tambahkan jarak antar elemen */
+    }
+
+    .money {
+        font-size: 1.8rem; /* Kecilkan font uang */
+        flex-basis: 100%; /* Pindah ke baris baru jika perlu */
+    }
+
+    .level {
+        font-size: 0.8rem; /* Kecilkan font level */
+    }
+
+    .settings-icons button {
+        font-size: 1.2rem; /* Kecilkan tombol settings */
+    }
+
+    /* Game Area */
+    .game-area {
+        flex: 1;
+        width: 100%; /* Isi lebar container */
+        min-height: 300px; /* Beri tinggi minimum agar tetap terlihat */
+    }
+
+    /* Sidebar (Left & Right) - Gabungkan menjadi satu di bawah game area */
+    .sidebar-left,
+    .sidebar-right {
+        width: 100%; /* Isi lebar container */
+        padding: 10px;
+        flex-direction: row; /* Susun tombol secara horizontal */
+        flex-wrap: wrap; /* Izinkan wrap jika tombol terlalu banyak/lebar */
+        gap: 8px; /* Kurangi jarak antar tombol */
+        order: 2; /* Letakkan sidebar setelah game area */
+    }
+
+    /* Tombol di sidebar */
+    .sidebar-left button,
+    .sidebar-right button {
+        padding: 8px 12px; /* Kurangi padding */
+        font-size: 0.85rem; /* Kurangi ukuran font */
+        min-width: 70px; /* Beri lebar minimum agar tidak terlalu kecil */
+        flex: 1 1 auto; /* Biarkan tombol fleksibel */
+        max-width: calc(50% - 4px); /* Maksimum 2 tombol per baris (dengan gap) */
+    }
+
+    .upgrade {
+        flex-direction: column; /* Susun teks dan harga secara vertikal */
+        text-align: center;
+    }
+
+    .price {
+        font-size: 0.8rem; /* Kecilkan font harga */
+    }
+
+    /* Modal - Buat lebih kecil dan sesuaikan */
+    .modal-content {
+        width: 90%; /* Lebih kecil dari 300px */
+        max-width: 300px; /* Batasi maksimum */
+        padding: 15px;
+    }
+
+    .modal-content h2 {
+        font-size: 1.2rem; /* Kecilkan font judul modal */
+    }
+
+    .setting-row {
+        flex-direction: column; /* Susun label dan input secara vertikal */
+        align-items: flex-start; /* Rata kiri */
+        gap: 5px; /* Tambahkan jarak */
+    }
+
+    .setting-row input[type="range"] {
+        width: 100%; /* Isi lebar container */
+    }
+
+    /* Achievement Modal */
+    #achievementList {
+        max-height: 250px; /* Batasi tinggi */
+    }
+
+    .achievement-item {
+        flex-direction: column; /* Susun isi item secara vertikal */
+        align-items: flex-start;
+        gap: 5px;
+    }
+
+    .achievement-reward {
+        align-self: flex-end; /* Letakkan reward di kanan */
+    }
+
+    /* Mini Game Modal */
+    .ball-display {
+        width: 80px; /* Kecilkan ukuran bola display */
+        height: 80px;
+    }
+
+    .color-option {
+        width: 35px; /* Kecilkan ukuran pilihan warna */
+        height: 35px;
+    }
+
+    .streak-display span {
+        font-size: 1.2rem; /* Kecilkan font streak */
+    }
+
+    .minigame-play-btn {
+        padding: 8px 15px; /* Kecilkan tombol main lagi */
+        font-size: 0.9rem;
+    }
+
+    /* Update Log Modal */
+    .update-log-entry {
+        padding: 8px;
+    }
+
+    .update-log-version {
+        font-size: 1rem; /* Kecilkan font versi */
+    }
+
+    .update-log-changes {
+        font-size: 0.8rem; /* Kecilkan font perubahan */
+    }
+
+    /* Achievement Notification */
+    .achievement-notification {
+        width: 90%; /* Lebih kecil */
+        max-width: 350px; /* Batasi maksimum */
+        padding: 10px;
+    }
+
+    .achievement-content {
+        gap: 8px; /* Kurangi jarak */
+    }
+
+    .achievement-icon {
+        font-size: 1.5rem; /* Kecilkan ikon */
+    }
+
+    .achievement-title {
+        font-size: 1rem; /* Kecilkan judul */
+    }
+
+    .achievement-desc {
+        font-size: 0.8rem; /* Kecilkan deskripsi */
+    }
 }
 
-.update-notification-content {
-  display: flex;
-  flex-direction: column;
-}
+/* Media Query tambahan untuk layar sangat kecil (misalnya ponsel lama atau orientasi potrait ekstrem) */
+@media (max-width: 480px) {
+    .header {
+        flex-direction: column; /* Susun header secara vertikal */
+        align-items: center; /* Rata tengah */
+        gap: 5px;
+    }
 
-.update-notification-title {
-  font-weight: bold;
-  font-size: 1.1rem;
-}
+    .money {
+        font-size: 1.5rem; /* Kecilkan lagi */
+    }
 
-.update-notification-desc {
-  font-size: 0.9rem;
-  color: #aaa;
-}
+    .level {
+        font-size: 0.7rem; /* Kecilkan lagi */
+    }
 
-/* Settings Modal */
-.setting-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin: 15px 0;
-}
+    .settings-icons {
+        order: -1; /* Pindahkan settings ke atas */
+        width: 100%;
+        justify-content: center; /* Rata tengah */
+    }
 
-.setting-row label {
-  font-size: 1rem;
-}
+    .sidebar-left button,
+    .sidebar-right button {
+        max-width: calc(50% - 8px); /* Maksimum 2 tombol per baris (dengan gap lebih besar) */
+        font-size: 0.8rem; /* Kecilkan font lagi */
+        padding: 6px 10px; /* Kecilkan padding lagi */
+    }
 
-.setting-row input[type="range"] {
-  width: 100px;
-}
+    .upgrade {
+        max-width: 100%; /* Biarkan upgrade mengisi lebar penuh */
+    }
 
-.reset-btn {
-  background: #f44336;
-  color: white;
-  border: none;
-  padding: 10px 20px;
-  border-radius: 5px;
-  cursor: pointer;
-  font-size: 1rem;
-  transition: background 0.3s;
-}
+    .ball-display {
+        width: 70px; /* Kecilkan lagi */
+        height: 70px;
+    }
 
-.reset-btn:hover {
-  background: #d32f2f;
-}
+    .color-option {
+        width: 30px; /* Kecilkan lagi */
+        height: 30px;
+    }
 
-/* Confirmation Modal */
-.confirmation-modal {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.7);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 2000;
-}
-
-.confirmation-content {
-  background: #221133;
-  padding: 20px;
-  border-radius: 15px;
-  text-align: center;
-  width: 300px;
-}
-
-.confirmation-content h3 {
-  color: #ff4444;
-  margin-bottom: 15px;
-}
-
-.confirmation-content p {
-  margin-bottom: 15px;
-  color: #ddd;
-}
-
-.confirmation-buttons {
-  display: flex;
-  justify-content: space-around;
-}
-
-.confirmation-btn {
-  padding: 8px 15px;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-  font-size: 1rem;
-}
-
-.confirmation-btn.yes {
-  background: #4CAF50;
-  color: white;
-}
-
-.confirmation-btn.no {
-  background: #f44336;
-  color: white;
+    .minigame-play-btn {
+        padding: 6px 12px; /* Kecilkan lagi */
+        font-size: 0.85rem;
+    }
 }
