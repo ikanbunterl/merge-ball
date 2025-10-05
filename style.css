@@ -5,7 +5,6 @@
 }
 
 body {
-  background: #221133;
   color: white;
   font-family: 'Segoe UI', sans-serif;
   overflow: hidden;
@@ -85,42 +84,9 @@ body {
   font-weight: bold;
   pointer-events: none;
   z-index: 10;
-  /* Glow effect */
-  box-shadow: 0 0 10px currentColor, 0 0 20px currentColor;
-  /* Pulsing animation */
-  animation: pulse 2s infinite;
-  /* Bloom effect */
   overflow: hidden;
 }
 
-.ball::before {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  border-radius: 50%;
-  background: inherit; /* Inherit gradient from parent */
-  filter: blur(15px);
-  z-index: -1;
-}
-
-/* Halo effect */
-.ball::after {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  border-radius: 50%;
-  border: 2px solid transparent;
-  background: inherit;
-  background-clip: padding-box;
-  filter: blur(10px);
-  z-index: -2;
-}
-
-/* Shine effect */
 .shine {
   position: absolute;
   top: 0;
@@ -129,9 +95,8 @@ body {
   height: 100%;
   border-radius: 50%;
   background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.8), transparent 70%);
-  opacity: 0.6;
+  opacity: 0.4;
   z-index: -1;
-  animation: rotate 3s linear infinite;
   pointer-events: none;
 }
 
@@ -146,7 +111,7 @@ body {
 
 @keyframes pulse {
   0% { transform: scale(1); }
-  50% { transform: scale(1.05); }
+  50% { transform: scale(1.03); }
   100% { transform: scale(1); }
 }
 
@@ -189,35 +154,31 @@ body {
 
 @keyframes explode {
   0% { transform: scale(1); opacity: 1; }
-  100% { transform: scale(2); opacity: 0; }
+  100% { transform: scale(1.5); opacity: 0; }
 }
 
-/* Trail */
 .trail-dot {
-  position: absolute;
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  pointer-events: none;
-  z-index: 9;
-  animation: fadeTrail 0.5s forwards;
-}
-
-@keyframes fadeTrail {
-  0% { opacity: 0.8; transform: scale(1); }
-  100% { opacity: 0; transform: scale(0.2); }
-}
-
-/* Sparkle */
-.sparkle {
   position: absolute;
   width: 4px;
   height: 4px;
   border-radius: 50%;
+  pointer-events: none;
+  z-index: 9;
+}
+
+@keyframes fadeTrail {
+  0% { opacity: 0.6; transform: scale(1); }
+  100% { opacity: 0; transform: scale(0.2); }
+}
+
+.sparkle {
+  position: absolute;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
   background: white;
   pointer-events: none;
   z-index: 11;
-  animation: sparkle-fade 1s forwards;
 }
 
 @keyframes sparkle-fade {
@@ -225,7 +186,6 @@ body {
   100% { opacity: 0; transform: scale(0.2); }
 }
 
-/* Sidebar */
 .sidebar-left, .sidebar-right {
   width: 250px;
   padding: 20px;
@@ -277,7 +237,6 @@ body {
   font-size: 0.9rem;
 }
 
-/* Modal */
 .modal {
   display: none;
   position: fixed;
@@ -320,17 +279,16 @@ body {
   font-size: 1rem;
 }
 
-.setting-row input[type="range"] {
+.setting-row input[type="range"],
+.setting-row select {
   width: 100px;
 }
 
-/* Achievement Modal */
-#achievementBtn {
-  background: none;
-  border: none;
-  font-size: 1.5rem;
+.setting-row input[type="checkbox"] {
+  width: auto;
+  margin-left: 10px;
+  transform: scale(1.2);
   cursor: pointer;
-  color: white;
 }
 
 #achievementList {
@@ -381,54 +339,6 @@ body {
   font-size: 1.5rem;
 }
 
-/* Achievement Notification */
-#achievementNotification {
-  position: fixed;
-  top: 20px;
-  right: -400px; /* Start hidden off-screen */
-  width: 350px;
-  background: rgba(0, 0, 0, 0.8);
-  border: 2px solid gold;
-  border-radius: 15px;
-  padding: 15px;
-  color: white;
-  display: flex;
-  align-items: center;
-  gap: 15px;
-  z-index: 1001;
-  transition: right 0.5s ease-in-out;
-  box-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
-}
-
-#achievementNotification.show {
-  right: 20px; /* Slide in */
-}
-
-.achievement-content {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.achievement-icon {
-  font-size: 2rem;
-}
-
-.achievement-text {
-  display: flex;
-  flex-direction: column;
-}
-
-.achievement-title {
-  font-weight: bold;
-  font-size: 1.2rem;
-}
-
-.achievement-desc {
-  font-size: 0.9rem;
-  color: #aaa;
-}
-
 #achievementNotificationContainer {
   position: fixed;
   top: 20px;
@@ -440,7 +350,6 @@ body {
   align-items: flex-end;
 }
 
-/* Achievement Notification */
 .achievement-notification {
   width: 350px;
   background: rgba(0, 0, 0, 0.8);
@@ -488,14 +397,6 @@ body {
   color: #aaa;
 }
 
-#minigameBtn {
-  background: none;
-  border: none;
-  font-size: 1.5rem;
-  cursor: pointer;
-  color: white;
-}
-
 #minigameContent {
   display: flex;
   flex-direction: column;
@@ -508,7 +409,7 @@ body {
   height: 100px;
   border-radius: 50%;
   margin: 20px auto;
-  box-shadow: 0 0 15px currentColor;
+  filter: drop-shadow(0 0 15px currentColor);
 }
 
 .color-options {
@@ -558,7 +459,6 @@ body {
   background: #45a049;
 }
 
-/* Streak Display */
 .streak-display {
   font-size: 1.2rem;
   font-weight: bold;
@@ -570,15 +470,6 @@ body {
 .streak-display span {
   color: #4CAF50;
   font-size: 1.5rem;
-}
-
-/* Mini Game Modal */
-#minigameBtn {
-  background: none;
-  border: none;
-  font-size: 1.5rem;
-  cursor: pointer;
-  color: white;
 }
 
 .mode-toggle {
@@ -621,91 +512,6 @@ body {
   transform: translateX(26px);
 }
 
-#minigameContent {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 20px;
-}
-
-.ball-display {
-  width: 100px;
-  height: 100px;
-  border-radius: 50%;
-  margin: 20px auto;
-  box-shadow: 0 0 15px currentColor;
-}
-
-.color-options {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 10px;
-  margin-top: 20px;
-}
-
-.color-option {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  cursor: pointer;
-  border: 2px solid transparent;
-  transition: transform 0.2s, border-color 0.2s;
-}
-
-.color-option:hover {
-  transform: scale(1.1);
-}
-
-.color-option.selected {
-  border-color: white;
-  box-shadow: 0 0 10px white;
-}
-
-.minigame-result {
-  font-size: 1.2rem;
-  font-weight: bold;
-  margin: 10px 0;
-  min-height: 30px;
-}
-
-.minigame-play-btn {
-  padding: 10px 20px;
-  background: #4CAF50;
-  color: white;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-  font-size: 1rem;
-}
-
-.minigame-play-btn:hover {
-  background: #45a049;
-}
-
-/* Streak Display */
-.streak-display {
-  font-size: 1.2rem;
-  font-weight: bold;
-  color: gold;
-  text-align: center;
-  margin-top: 10px;
-}
-
-.streak-display span {
-  color: #4CAF50;
-  font-size: 1.5rem;
-}
-
-/* Update Log Modal */
-#updateLogBtn {
-  background: none;
-  border: none;
-  font-size: 1.5rem;
-  cursor: pointer;
-  color: white;
-}
-
 #updateLogContent {
   max-height: 400px;
   overflow-y: auto;
@@ -713,80 +519,90 @@ body {
   line-height: 1.6;
 }
 
-.update-log-entry {
-  margin-bottom: 15px;
-  padding: 10px;
+.update-log-entry-compact {
+  margin-bottom: 10px;
+  padding: 8px;
   background: rgba(255, 255, 255, 0.05);
   border-radius: 5px;
-  border-left: 3px solid #4CAF50;
+  border-left: 2px solid #4CAF50;
+}
+
+.update-log-header {
+  font-weight: bold;
+  color: gold;
+  cursor: pointer;
+  padding: 5px;
+  border-radius: 3px;
+}
+
+.update-log-header:hover {
+  background: rgba(255, 255, 255, 0.1);
 }
 
 .update-log-version {
-  font-weight: bold;
-  color: gold;
-  margin-bottom: 5px;
-}
-
-.update-log-changes {
-  font-size: 0.9rem;
-  color: #ccc;
-}
-
-/* Update Notification */
-#updateNotification {
-  position: fixed;
-  bottom: 20px;
-  right: 20px;
-  background: rgba(0, 0, 0, 0.8);
-  border: 2px solid gold;
-  border-radius: 10px;
-  padding: 15px;
-  color: white;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  z-index: 1001;
-  transition: transform 0.3s ease, opacity 0.3s ease;
-  box-shadow: 0 0 15px rgba(255, 215, 0, 0.5);
-  cursor: pointer;
-  transform: translateY(100%);
-  opacity: 0;
-}
-
-#updateNotification.show {
-  transform: translateY(0);
-  opacity: 1;
-}
-
-.update-notification-content {
-  display: flex;
-  flex-direction: column;
-}
-
-.update-notification-title {
-  font-weight: bold;
-  font-size: 1.1rem;
-}
-
-.update-notification-desc {
-  font-size: 0.9rem;
-  color: #aaa;
-}
-
-/* Settings Modal */
-.setting-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin: 15px 0;
-}
-
-.setting-row label {
   font-size: 1rem;
 }
 
-.setting-row input[type="range"] {
-  width: 100px;
+.update-log-changes-compact {
+  font-size: 0.85rem;
+  color: #ccc;
+  margin-top: 5px;
+  padding-left: 10px;
+  display: none;
+}
+
+.update-log-changes-compact.show {
+  display: block;
+}
+
+.update-log-changes-compact > div {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 4px;
+}
+
+.update-log-changes-compact > div span:first-child {
+  display: inline-block;
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-size: 0.65rem;
+  font-weight: bold;
+  margin-right: 6px;
+  flex-shrink: 0;
+  text-align: center;
+  min-width: 40px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  transition: transform 0.1s ease;
+}
+
+.update-log-changes-compact > div span:first-child:hover {
+  transform: scale(1.05);
+}
+
+.update-log-changes-compact > div span:first-child.update {
+  background: linear-gradient(135deg, #4CAF50, #2E7D32);
+  color: white;
+}
+
+.update-log-changes-compact > div span:first-child.fix {
+  background: linear-gradient(135deg, #2196F3, #0D47A1);
+  color: white;
+}
+
+.update-log-changes-compact > div span:first-child.tweak {
+  background: linear-gradient(135deg, #FFC107, #FF8F00);
+  color: black;
+}
+
+.update-log-changes-compact > div span:first-child.revamp {
+  background: linear-gradient(135deg, #9C27B0, #6A1B9A);
+  color: white;
+}
+
+.update-log-changes-compact > div span:last-child {
+  font-size: 0.8rem;
+  color: #ddd;
+  flex-grow: 1;
 }
 
 .reset-btn {
@@ -804,7 +620,6 @@ body {
   background: #d32f2f;
 }
 
-/* Confirmation Modal */
 .confirmation-modal {
   position: fixed;
   top: 0;
@@ -863,216 +678,207 @@ body {
     touch-action: none;
 }
 
-/* Media Query untuk layar kecil (misalnya ponsel) */
 @media (max-width: 768px) {
-    /* Atur container agar mengisi layar penuh */
     .container {
         height: 100vh;
-        flex-direction: column; /* Susun header, game area, dan sidebar secara vertikal */
-        overflow: auto; /* Aktifkan scroll jika isi terlalu panjang */
+        flex-direction: column;
+        overflow: auto;
     }
 
-    /* Header */
     .header {
-        position: relative; /* Ubah dari absolute agar mengikuti alur */
+        position: relative;
         top: auto;
         left: auto;
         width: 100%;
-        justify-content: space-between; /* Distribusikan elemen header */
+        justify-content: space-between;
         padding: 10px;
         box-sizing: border-box;
-        flex-wrap: wrap; /* Izinkan wrap jika terlalu lebar */
-        gap: 10px; /* Tambahkan jarak antar elemen */
+        flex-wrap: wrap;
+        gap: 10px;
     }
 
     .money {
-        font-size: 1.8rem; /* Kecilkan font uang */
-        flex-basis: 100%; /* Pindah ke baris baru jika perlu */
+        font-size: 1.8rem;
+        flex-basis: 100%;
     }
 
     .level {
-        font-size: 0.8rem; /* Kecilkan font level */
+        font-size: 0.8rem;
     }
 
     .settings-icons button {
-        font-size: 1.2rem; /* Kecilkan tombol settings */
+        font-size: 1.2rem;
     }
 
-    /* Game Area */
     .game-area {
         flex: 1;
-        width: 100%; /* Isi lebar container */
-        min-height: 300px; /* Beri tinggi minimum agar tetap terlihat */
+        width: 100%;
+        min-height: 300px;
     }
 
-    /* Sidebar (Left & Right) - Gabungkan menjadi satu di bawah game area */
     .sidebar-left,
     .sidebar-right {
-        width: 100%; /* Isi lebar container */
+        width: 100%;
         padding: 10px;
-        flex-direction: row; /* Susun tombol secara horizontal */
-        flex-wrap: wrap; /* Izinkan wrap jika tombol terlalu banyak/lebar */
-        gap: 8px; /* Kurangi jarak antar tombol */
-        order: 2; /* Letakkan sidebar setelah game area */
+        flex-direction: row;
+        flex-wrap: wrap;
+        gap: 8px;
+        order: 2;
     }
 
-    /* Tombol di sidebar */
     .sidebar-left button,
     .sidebar-right button {
-        padding: 8px 12px; /* Kurangi padding */
-        font-size: 0.85rem; /* Kurangi ukuran font */
-        min-width: 70px; /* Beri lebar minimum agar tidak terlalu kecil */
-        flex: 1 1 auto; /* Biarkan tombol fleksibel */
-        max-width: calc(50% - 4px); /* Maksimum 2 tombol per baris (dengan gap) */
+        padding: 8px 12px;
+        font-size: 0.85rem;
+        min-width: 70px;
+        flex: 1 1 auto;
+        max-width: calc(50% - 4px);
     }
 
     .upgrade {
-        flex-direction: column; /* Susun teks dan harga secara vertikal */
+        flex-direction: column;
         text-align: center;
     }
 
     .price {
-        font-size: 0.8rem; /* Kecilkan font harga */
+        font-size: 0.8rem;
     }
 
-    /* Modal - Buat lebih kecil dan sesuaikan */
     .modal-content {
-        width: 90%; /* Lebih kecil dari 300px */
-        max-width: 300px; /* Batasi maksimum */
+        width: 90%;
+        max-width: 300px;
         padding: 15px;
     }
 
     .modal-content h2 {
-        font-size: 1.2rem; /* Kecilkan font judul modal */
+        font-size: 1.2rem;
     }
 
     .setting-row {
-        flex-direction: column; /* Susun label dan input secara vertikal */
-        align-items: flex-start; /* Rata kiri */
-        gap: 5px; /* Tambahkan jarak */
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 5px;
     }
 
-    .setting-row input[type="range"] {
-        width: 100%; /* Isi lebar container */
+    .setting-row input[type="range"],
+    .setting-row select,
+    .setting-row input[type="checkbox"] {
+        width: 100%;
+        margin-left: 0;
     }
 
-    /* Achievement Modal */
     #achievementList {
-        max-height: 250px; /* Batasi tinggi */
+        max-height: 250px;
     }
 
     .achievement-item {
-        flex-direction: column; /* Susun isi item secara vertikal */
+        flex-direction: column;
         align-items: flex-start;
         gap: 5px;
     }
 
     .achievement-reward {
-        align-self: flex-end; /* Letakkan reward di kanan */
+        align-self: flex-end;
     }
 
-    /* Mini Game Modal */
     .ball-display {
-        width: 80px; /* Kecilkan ukuran bola display */
+        width: 80px;
         height: 80px;
     }
 
     .color-option {
-        width: 35px; /* Kecilkan ukuran pilihan warna */
+        width: 35px;
         height: 35px;
     }
 
     .streak-display span {
-        font-size: 1.2rem; /* Kecilkan font streak */
+        font-size: 1.2rem;
     }
 
     .minigame-play-btn {
-        padding: 8px 15px; /* Kecilkan tombol main lagi */
+        padding: 8px 15px;
         font-size: 0.9rem;
     }
 
-    /* Update Log Modal */
-    .update-log-entry {
-        padding: 8px;
+    .update-log-entry-compact {
+        padding: 6px;
     }
 
     .update-log-version {
-        font-size: 1rem; /* Kecilkan font versi */
+        font-size: 0.9rem;
     }
 
-    .update-log-changes {
-        font-size: 0.8rem; /* Kecilkan font perubahan */
+    .update-log-changes-compact {
+        font-size: 0.75rem;
     }
 
-    /* Achievement Notification */
     .achievement-notification {
-        width: 90%; /* Lebih kecil */
-        max-width: 350px; /* Batasi maksimum */
+        width: 90%;
+        max-width: 350px;
         padding: 10px;
     }
 
     .achievement-content {
-        gap: 8px; /* Kurangi jarak */
+        gap: 8px;
     }
 
     .achievement-icon {
-        font-size: 1.5rem; /* Kecilkan ikon */
+        font-size: 1.5rem;
     }
 
     .achievement-title {
-        font-size: 1rem; /* Kecilkan judul */
+        font-size: 1rem;
     }
 
     .achievement-desc {
-        font-size: 0.8rem; /* Kecilkan deskripsi */
+        font-size: 0.8rem;
     }
 }
 
-/* Media Query tambahan untuk layar sangat kecil (misalnya ponsel lama atau orientasi potrait ekstrem) */
 @media (max-width: 480px) {
     .header {
-        flex-direction: column; /* Susun header secara vertikal */
-        align-items: center; /* Rata tengah */
+        flex-direction: column;
+        align-items: center;
         gap: 5px;
     }
 
     .money {
-        font-size: 1.5rem; /* Kecilkan lagi */
+        font-size: 1.5rem;
     }
 
     .level {
-        font-size: 0.7rem; /* Kecilkan lagi */
+        font-size: 0.7rem;
     }
 
     .settings-icons {
-        order: -1; /* Pindahkan settings ke atas */
+        order: -1;
         width: 100%;
-        justify-content: center; /* Rata tengah */
+        justify-content: center;
     }
 
     .sidebar-left button,
     .sidebar-right button {
-        max-width: calc(50% - 8px); /* Maksimum 2 tombol per baris (dengan gap lebih besar) */
-        font-size: 0.8rem; /* Kecilkan font lagi */
-        padding: 6px 10px; /* Kecilkan padding lagi */
+        max-width: calc(50% - 8px);
+        font-size: 0.8rem;
+        padding: 6px 10px;
     }
 
     .upgrade {
-        max-width: 100%; /* Biarkan upgrade mengisi lebar penuh */
+        max-width: 100%;
     }
 
     .ball-display {
-        width: 70px; /* Kecilkan lagi */
+        width: 70px;
         height: 70px;
     }
 
     .color-option {
-        width: 30px; /* Kecilkan lagi */
+        width: 30px;
         height: 30px;
     }
 
     .minigame-play-btn {
-        padding: 6px 12px; /* Kecilkan lagi */
+        padding: 6px 12px;
         font-size: 0.85rem;
     }
 }

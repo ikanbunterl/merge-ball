@@ -1,31 +1,75 @@
-// script.js - BALL MERGE CLICKER - FINAL FIX VERSION - OPTIMIZED RENDER
-
+// script.js - BALL MERGE CLICKER - v2.0.0 - IMPROVED GRAPHICS, UI, & FEATURES
 // =================================================================
-// 1. GAME STATE
+// 1. POOLING SETUP (IMPROVED)
 // =================================================================
-let money = 100000;
+const coinPopPool = [];
+const sparklePool = [];
+let maxPoolSize = 100; // Default
+function updateMaxPoolSize() {
+    if (graphicQuality === 'low') maxPoolSize = 50;
+    else if (graphicQuality === 'medium') maxPoolSize = 75;
+    else maxPoolSize = 100; // high, ultra_low
+}
+function prunePools() {
+    while (coinPopPool.length > maxPoolSize) {
+        const el = coinPopPool.pop();
+        if (el && el.parentNode) el.parentNode.removeChild(el);
+    }
+    while (sparklePool.length > maxPoolSize) {
+        const el = sparklePool.pop();
+        if (el && el.parentNode) el.parentNode.removeChild(el);
+    }
+}
+function getFromPool(pool, className, container) {
+    prunePools();
+    let element = pool.find(el => el.classList.contains('pooled'));
+    if (!element) {
+        if (pool.length < maxPoolSize) {
+            element = document.createElement('div');
+            element.className = className;
+            element.classList.add('pooled');
+            container.appendChild(element);
+            pool.push(element);
+        } else {
+            return null;
+        }
+    }
+    element.classList.remove('pooled');
+    element.style.display = 'block';
+    return element;
+}
+function returnToPool(element, pool) {
+    if (element && pool.includes(element)) {
+        element.style.display = 'none';
+        element.classList.add('pooled');
+    }
+}
+// =================================================================
+// 2. GAME STATE
+// =================================================================
+let money = 10000000;
 let level = 7;
 let ballProfit = 1;
 let availableBalls = 5;
 let pins = [];
-let balls = []; // Array bola, setiap bola sekarang memiliki properti .element
+let balls = [];
 let autoSpawnActive = false;
 let autoSpawnInterval = null;
 let autoSpawnRate = 1000;
-
-// Achievement State
 let achievements = {
-  first_merge: { unlocked: false, name: "First Merge", desc: "Merge 2 balls", reward: 1000 },
-  money_100k: { unlocked: false, name: "100K Club", desc: "Earn 100K $", reward: 5000 },
-  ball_level_64: { unlocked: false, name: "Level 64", desc: "Get a ball with value 64", reward: 10000 },
-  merge_100: { unlocked: false, name: "100 Merges", desc: "Merge 100 times", reward: 50000 },
-  bounce_1000: { unlocked: false, name: "1000 Bounces", desc: "Bounce balls 1000 times", reward: 100000 }
+  first_merge: { unlocked: false, name: "First Merge", desc: "Merge 2 balls", reward: 1000, difficulty: 'easy' },
+  money_100k: { unlocked: false, name: "100K Club", desc: "Earn 100K $", reward: 5000, difficulty: 'easy' },
+  ball_level_64: { unlocked: false, name: "Level 64", desc: "Get a ball with value 64", reward: 10000, difficulty: 'medium' },
+  merge_100: { unlocked: false, name: "100 Merges", desc: "Merge 100 times", reward: 50000, difficulty: 'medium' },
+  bounce_1000: { unlocked: false, name: "1000 Bounces", desc: "Bounce balls 1000 times", reward: 100000, difficulty: 'hard' },
+  click_100: { unlocked: false, name: "Click Master I", desc: "Click 100 times", reward: 2000, difficulty: 'easy', counter: 0 },
+  click_1000: { unlocked: false, name: "Click Master II", desc: "Click 1000 times", reward: 10000, difficulty: 'medium', counter: 0 },
+  strategy_ball_128: { unlocked: false, name: "Strategic Growth", desc: "Get a ball level 128 without adding new balls for 5 minutes", reward: 25000, difficulty: 'hard', timerActive: false, timerStart: 0 },
 };
-
 let totalMerges = 0;
 let totalBounces = 0;
-
-// Mini Game State
+let totalClicks = 0;
+let lastBallAddTime = Date.now();
 let currentBallColor = '';
 let currentBallName = '';
 let colorOptions = [];
@@ -34,66 +78,137 @@ let isHardMode = false;
 const baseReward = 500;
 const streakBonus = 100;
 const hardModeMultiplier = 2;
-
-// Update Log
+let graphicQuality = 'high';
+let effectSettings = {
+    glow: true,
+    pulse: true,
+    shine: true,
+    sparkle: true,
+    trail: true
+};
+let theme = 'dark_purple';
 const updateLog = [
   {
-    version: "Beta 1.0.0",
+    version: "v2.0.0",
     changes: [
-      "Game pertama kali dirilis.",
-      "Fitur dasar merge & spawn bola.",
-      "Sistem uang & upgrade dasar."
+      { type: "update", text: "Added more detailed graphic quality presets (Low, Medium, High, Ultra Low)." },
+      { type: "update", text: "Added individual toggles for visual effects (Glow, Pulse, Shine, Sparkle, Trail)." },
+      { type: "update", text: "Added dynamic effect pooling based on graphic settings." },
+      { type: "update", text: "Added tiered achievements (e.g., 100/1000 clicks)." },
+      { type: "update", text: "Added compact, toggleable update log entries." },
+      { type: "update", text: "Added smooth modal transitions." },
+      { type: "update", text: "Added theme selector (Dark Purple, Dark Blue, Dark Green)." },
+      { type: "tweak", text: "Refined ball glow using drop-shadow filter." },
+      { type: "tweak", text: "Improved update log tag styles." },
+      { type: "tweak", text: "Optimized sparkle frequency calculation." },
+      { type: "fix", text: "Fixed minor UI alignment issues." }
     ]
   },
   {
-    version: "Beta 1.1.0",
+    version: "v1.8.0",
     changes: [
-      "Tambah efek glow, bloom, halo, shine, pulsing, sparkle.",
-      "Perbaikan UI & animasi bola.",
-      "Fitur save/load game."
+      { type: "update", text: "Added graphic quality settings (Low, Medium, High)." },
+      { type: "tweak", text: "Adjusted visual effects based on selected graphic quality." },
+      { type: "tweak", text: "Improved performance on lower graphic settings." }
     ]
   },
   {
-    version: "Beta 1.2.0",
+    version: "v1.7.0",
     changes: [
-      "Tambah sistem achievement.",
-      "Notifikasi achievement stack.",
-      "Fitur mini game tebak warna bola."
+      { type: "update", text: "Added settings for visual effects intensity." },
+      { type: "tweak", text: "Optimized ball glow using drop-shadow filter." },
+      { type: "tweak", text: "Refined update log tag styles for better readability." },
+      { type: "fix", text: "Fixed minor UI alignment issues." }
     ]
   },
   {
-    version: "Beta 1.3.0",
+    version: "v1.6.0",
     changes: [
-      "Tambah sistem streak bonus di mini game.",
-      "Tambah mode hard di mini game.",
-      "Perbaikan bug UI modal.",
-      "Tambah notifikasi update saat ada versi baru.",
-      "Tambah fitur reset progress."
+      { type: "update", text: "Added 'MAX' and 'x3' buttons to sidebar." },
+      { type: "update", text: "MAX spawns all available balls at once." },
+      { type: "update", text: "x3 instantly triples the speed of all balls." },
+      { type: "fix", text: "Fixed crash when spawning too many balls simultaneously." },
+      { type: "fix", text: "Resolved potential memory leak from excessive DOM elements." },
+      { type: "fix", text: "Corrected achievement unlock condition for '100 Merges'." },
+      { type: "tweak", text: "Reduced sparkle effect spawn rate for better performance." },
+      { type: "tweak", text: "Adjusted glow intensity for higher-level balls." },
+      { type: "revamp", text: "Optimized ball rendering using DOM pooling for effects." },
+      { type: "revamp", text: "Simplified ball element creation to reduce overhead." },
+      { type: "revamp", text: "Redesigned update log UI for clarity with inline tags." }
     ]
   },
   {
-    version: "Beta 1.3.1",
+    version: "v1.5.0",
     changes: [
-      "Implementasi tombol MAX dan x3 di sidebar kiri.",
-      "MAX men-spawn semua bola yang tersedia.",
-      "x3 menggandakan kecepatan semua bola secara instan."
+      { type: "update", text: "Added 'MAX' and 'x3' buttons to sidebar." },
+      { type: "update", text: "MAX spawns all available balls at once." },
+      { type: "update", text: "x3 instantly triples the speed of all balls." },
+      { type: "fix", text: "Fixed crash when spawning too many balls simultaneously." },
+      { type: "fix", text: "Resolved potential memory leak from excessive DOM elements." },
+      { type: "fix", text: "Corrected achievement unlock condition for '100 Merges'." },
+      { type: "tweak", text: "Reduced sparkle effect spawn rate for better performance." },
+      { type: "tweak", text: "Adjusted glow intensity for higher-level balls." },
+      { type: "revamp", text: "Optimized ball rendering using DOM pooling for effects." },
+      { type: "revamp", text: "Simplified ball element creation to reduce overhead." },
+      { type: "revamp", text: "Redesigned update log UI for clarity." }
     ]
   },
   {
-    version: "Beta 1.4.0",
+    version: "v1.4.0",
     changes: [
-      "Optimasi performa render bola.",
-      "Gunakan referensi elemen bola untuk update cepat.",
-      "Hapus renderPins() dari game loop utama."
+      { type: "revamp", text: "Optimized ball rendering using direct DOM manipulation." },
+      { type: "revamp", text: "Introduced ball element references for faster updates." },
+      { type: "revamp", text: "Removed redundant renderPins call from main game loop." },
+      { type: "fix", text: "Fixed UI modal rendering issues." },
+      { type: "fix", text: "Fixed save/load game logic." }
+    ]
+  },
+  {
+    version: "v1.3.1",
+    changes: [
+      { type: "update", text: "Implemented 'MAX' and 'x3' buttons on the left sidebar." },
+      { type: "update", text: "MAX spawns all available balls instantly." },
+      { type: "update", text: "x3 triples the speed of all balls immediately." }
+    ]
+  },
+  {
+    version: "v1.3.0",
+    changes: [
+      { type: "update", text: "Added streak bonus system to the mini game." },
+      { type: "update", text: "Added a hard mode toggle to the mini game." },
+      { type: "update", text: "Implemented an update notification system." },
+      { type: "update", text: "Added a progress reset feature with confirmation." },
+      { type: "fix", text: "Fixed minor UI modal display bugs." }
+    ]
+  },
+  {
+    version: "v1.2.0",
+    changes: [
+      { type: "update", text: "Added an achievement system." },
+      { type: "update", text: "Implemented achievement notification stack." },
+      { type: "update", text: "Added a mini game: Guess the Ball Color." }
+    ]
+  },
+  {
+    version: "v1.1.0",
+    changes: [
+      { type: "update", text: "Added glow, bloom, halo, shine, pulsing, and sparkle effects." },
+      { type: "update", text: "Improved ball UI and animations." },
+      { type: "update", text: "Implemented save/load game functionality." }
+    ]
+  },
+  {
+    version: "v1.0.0",
+    changes: [
+      { type: "update", text: "Initial game release." },
+      { type: "update", text: "Basic ball merge and spawn mechanics." },
+      { type: "update", text: "Simple money and upgrade system." }
     ]
   }
 ];
-
-// Current version
-const currentVersion = "Beta 1.4.0";
-
+const currentVersion = "v2.0.0";
 // =================================================================
-// 2. DOM ELEMENTS & CONSTANTS
+// 3. DOM ELEMENTS & CONSTANTS
 // =================================================================
 const moneyEl = document.querySelector('.money');
 const levelEl = document.querySelector('.level');
@@ -123,8 +238,15 @@ const updateLogContent = document.getElementById('updateLogContent');
 const resetProgressBtn = document.getElementById('resetProgressBtn');
 const maxBtn = document.querySelector('.sidebar-left .max');
 const x3Btn = document.querySelector('.sidebar-left .x3');
-
-// Update Notification Element
+const graphicQualitySelect = document.getElementById('graphicQualitySelect');
+const glowToggle = document.getElementById('glowToggle');
+const pulseToggle = document.getElementById('pulseToggle');
+const shineToggle = document.getElementById('shineToggle');
+const sparkleToggle = document.getElementById('sparkleToggle');
+const trailToggle = document.getElementById('trailToggle');
+const glowIntensitySlider = document.getElementById('glowIntensitySlider');
+const sparkleRateSlider = document.getElementById('sparkleRateSlider');
+const themeSelect = document.getElementById('themeSelect');
 const updateNotification = document.createElement('div');
 updateNotification.id = 'updateNotification';
 updateNotification.innerHTML = `
@@ -134,9 +256,8 @@ updateNotification.innerHTML = `
   </div>
 `;
 document.body.appendChild(updateNotification);
-
 // =================================================================
-// 3. UTILITY FUNCTIONS
+// 4. UTILITY FUNCTIONS
 // =================================================================
 function formatMoney(num) {
   if (num >= 1e12) return (num / 1e12).toFixed(1) + 'T $';
@@ -145,13 +266,11 @@ function formatMoney(num) {
   if (num >= 1e3) return (num / 1e3).toFixed(1) + 'K $';
   return num.toFixed(0) + ' $';
 }
-
 function formatShortMoney(num) {
   if (num >= 1e6) return (num / 1e6).toFixed(1) + 'M';
   if (num >= 1e3) return (num / 1e3).toFixed(1) + 'K';
   return num.toFixed(0);
 }
-
 function calculateUpgradeCost(type) {
   switch (type) {
     case 'addBall':
@@ -166,11 +285,9 @@ function calculateUpgradeCost(type) {
       return Infinity;
   }
 }
-
 function getBallSize(value) {
   return 28 + (value / 2);
 }
-
 function getBallGradient(value) {
   const gradients = {
     2: 'linear-gradient(45deg, #FF5722, #FF9800)',
@@ -184,7 +301,6 @@ function getBallGradient(value) {
     512: 'linear-gradient(45deg, #607D8B, #FF5722)',
     1024: 'linear-gradient(45deg, #FF5722, #607D8B)'
   };
-
   if (gradients[value]) {
     return gradients[value];
   } else {
@@ -193,7 +309,6 @@ function getBallGradient(value) {
     return `linear-gradient(45deg, hsl(${hue1}, 80%, 50%), hsl(${hue2}, 80%, 50%))`;
   }
 }
-
 function getBallColorName(value) {
   const colors = {
     2: 'Merah',
@@ -207,43 +322,47 @@ function getBallColorName(value) {
     512: 'Abu',
     1024: 'Emas'
   };
-
   if (colors[value]) {
     return colors[value];
   } else {
-    // For dynamic values, return a generic name
     return 'Acak';
   }
 }
-
-function getBloomSize(value) {
-  return Math.min(50, 15 + Math.log2(value) * 5);
-}
-
-function getHaloSize(value) {
-  return Math.min(80, 30 + Math.log2(value) * 8);
-}
-
 function getShineSpeed(value) {
   return Math.max(1, 3 - Math.log2(value) * 0.2);
 }
-
 function getGlowIntensity(value) {
-  return Math.min(10 + Math.log2(value) * 2, 30);
+    if (graphicQuality === 'low' || graphicQuality === 'ultra_low' || !effectSettings.glow) {
+        return 0;
+    }
+    const baseIntensity = Math.min(10 + Math.log2(value) * 2, 30);
+    return baseIntensity * (glowIntensitySlider ? glowIntensitySlider.value / 100 : 1);
 }
-
 function getBallPulseSpeed(value) {
-  return Math.max(0.5, 2 - Math.log2(value) * 0.1);
+    if (graphicQuality === 'low' || graphicQuality === 'ultra_low' || !effectSettings.pulse) {
+        return 0;
+    }
+    return Math.max(0.5, 2 - Math.log2(value) * 0.1);
 }
-
 function getBallSparkleCount(value) {
-  return Math.min(5, Math.floor(Math.log2(value) / 2));
+    if (graphicQuality === 'low' || graphicQuality === 'ultra_low' || !effectSettings.sparkle) {
+        return 0;
+    }
+    const baseCount = Math.min(5, Math.floor(Math.log2(value) / 2));
+    const ballFactor = Math.max(0.1, 1 - (balls.length / 50));
+    const rateFactor = sparkleRateSlider ? sparkleRateSlider.value / 100 : 0.5;
+    return Math.floor(baseCount * ballFactor * rateFactor);
 }
-
+function getBallTrailCount() {
+    if (graphicQuality === 'low' || graphicQuality === 'ultra_low' || !effectSettings.trail) {
+        return 0;
+    }
+    if (graphicQuality === 'medium') return 5;
+    return 10; // high
+}
 function getBallSpeedMultiplier(value) {
   return 1 + Math.log2(value) * 0.1;
 }
-
 function getBallColorFromGradient(value) {
   const gradients = {
     2: '#FF5722',
@@ -257,7 +376,6 @@ function getBallColorFromGradient(value) {
     512: '#607D8B',
     1024: '#FF5722'
   };
-
   if (gradients[value]) {
     return gradients[value];
   } else {
@@ -265,44 +383,190 @@ function getBallColorFromGradient(value) {
     return `hsl(${hue1}, 80%, 50%)`;
   }
 }
-
-function hexToRgb(hex) {
-  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-  return result
-    ? `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}`
-    : '255, 255, 255';
+function applyGraphicSettingsToBall(ballElement, value, isMerged = false) {
+    if (graphicQuality === 'ultra_low') {
+        ballElement.style.filter = 'none';
+        ballElement.style.animation = 'none';
+        const shineEl = ballElement.querySelector('.shine');
+        if (shineEl) shineEl.style.display = 'none';
+        const valueLabel = ballElement.querySelector('.ball-value');
+        if (valueLabel) valueLabel.style.top = isMerged ? '-25px' : '-20px';
+        return;
+    }
+    const intensity = getGlowIntensity(value);
+    if (intensity > 0 && effectSettings.glow) {
+        ballElement.style.filter = `drop-shadow(0 0 ${intensity}px ${getBallColorFromGradient(value)}) drop-shadow(0 0 ${intensity * 2}px ${getBallColorFromGradient(value)})`;
+    } else {
+        ballElement.style.filter = 'none';
+    }
+    const pulseSpeed = getBallPulseSpeed(value);
+    if (pulseSpeed > 0 && effectSettings.pulse) {
+        ballElement.style.animation = `pulse ${pulseSpeed}s infinite ease-in-out`;
+    } else {
+        ballElement.style.animation = 'none';
+    }
+    const shineEl = ballElement.querySelector('.shine');
+    if (shineEl) {
+        if (graphicQuality === 'high' && effectSettings.shine) {
+            shineEl.style.display = 'block';
+            const speedClass = `shine-speed-${value}` || 'shine-speed-default';
+            shineEl.className = 'shine';
+            shineEl.classList.add(speedClass);
+        } else {
+            shineEl.style.display = 'none';
+        }
+    }
+    const valueLabel = ballElement.querySelector('.ball-value');
+    if (valueLabel) {
+        valueLabel.style.top = isMerged ? '-25px' : '-20px';
+    }
 }
-
-// Create sparkle effect
 function createSparkle(x, y, color) {
-  const sparkle = document.createElement('div');
-  sparkle.className = 'sparkle';
-  sparkle.style.left = `${x}px`;
-  sparkle.style.top = `${y}px`;
-  sparkle.style.background = color;
-
-  gameArea.appendChild(sparkle);
-
-  // Remove after animation
-  setTimeout(() => {
-    sparkle.remove();
-  }, 1000);
+    if (graphicQuality === 'low' || graphicQuality === 'ultra_low' || !effectSettings.sparkle) {
+        return;
+    }
+    if (Math.random() > (sparkleRateSlider ? sparkleRateSlider.value / 100 : 0.01)) {
+        return;
+    }
+    const sparkle = getFromPool(sparklePool, 'sparkle', gameArea);
+    if (!sparkle) return;
+    sparkle.style.left = `${x}px`;
+    sparkle.style.top = `${y}px`;
+    sparkle.style.background = color;
+    sparkle.style.animation = 'none';
+    sparkle.offsetHeight;
+    sparkle.style.animation = 'sparkle-fade 1s forwards';
+    setTimeout(() => {
+        returnToPool(sparkle, sparklePool);
+    }, 1000);
 }
-
+function createTrailDot(x, y, color, opacity) {
+    if (graphicQuality === 'ultra_low' || !effectSettings.trail) {
+        return;
+    }
+    const trailDot = getFromPool(sparklePool, 'trail-dot', gameArea);
+    if (!trailDot) return;
+    trailDot.style.left = `${x}px`;
+    trailDot.style.top = `${y}px`;
+    trailDot.style.background = color;
+    trailDot.style.opacity = opacity;
+    trailDot.style.animation = 'none';
+    trailDot.offsetHeight;
+    trailDot.style.animation = 'fadeTrail 0.4s forwards';
+    setTimeout(() => {
+        returnToPool(trailDot, sparklePool);
+    }, 400);
+}
+function applyTheme() {
+    document.body.style.background = getThemeBackground();
+}
+function getThemeBackground() {
+    switch(theme) {
+        case 'dark_blue': return '#112233';
+        case 'dark_green': return '#113322';
+        case 'dark_purple': default: return '#221133';
+    }
+}
+function updateGraphicSettings() {
+    updateMaxPoolSize();
+    balls.forEach(ball => {
+        if (ball.element) {
+            applyGraphicSettingsToBall(ball.element, ball.value);
+        }
+    });
+    if (minigameModal.style.display === 'flex' && ballDisplay && ballDisplay.style.background) {
+        if (graphicQuality !== 'ultra_low' && effectSettings.glow) {
+            ballDisplay.style.filter = `drop-shadow(0 0 15px ${currentBallColor || '#FFFFFF'})`;
+        } else {
+            ballDisplay.style.filter = 'none';
+        }
+    }
+}
+function checkAchievements(type, value = null) {
+    totalClicks++;
+    if (type === 'merge' && !achievements.first_merge.unlocked) {
+        achievements.first_merge.unlocked = true;
+        money += achievements.first_merge.reward;
+        showAchievementNotification(achievements.first_merge.name, achievements.first_merge.reward, achievements.first_merge.difficulty);
+    }
+    if (type === 'money' && money >= 100000 && !achievements.money_100k.unlocked) {
+        achievements.money_100k.unlocked = true;
+        money += achievements.money_100k.reward;
+        showAchievementNotification(achievements.money_100k.name, achievements.money_100k.reward, achievements.money_100k.difficulty);
+    }
+    if (type === 'merge' && value >= 64 && !achievements.ball_level_64.unlocked) {
+        achievements.ball_level_64.unlocked = true;
+        money += achievements.ball_level_64.reward;
+        showAchievementNotification(achievements.ball_level_64.name, achievements.ball_level_64.reward, achievements.ball_level_64.difficulty);
+    }
+    if (type === 'merge' && totalMerges >= 100 && !achievements.merge_100.unlocked) {
+        achievements.merge_100.unlocked = true;
+        money += achievements.merge_100.reward;
+        showAchievementNotification(achievements.merge_100.name, achievements.merge_100.reward, achievements.merge_100.difficulty);
+    }
+    if (type === 'bounce' && totalBounces >= 1000 && !achievements.bounce_1000.unlocked) {
+        achievements.bounce_1000.unlocked = true;
+        money += achievements.bounce_1000.reward;
+        showAchievementNotification(achievements.bounce_1000.name, achievements.bounce_1000.reward, achievements.bounce_1000.difficulty);
+    }
+    if (totalClicks >= 100 && !achievements.click_100.unlocked) {
+        achievements.click_100.unlocked = true;
+        money += achievements.click_100.reward;
+        showAchievementNotification(achievements.click_100.name, achievements.click_100.reward, achievements.click_100.difficulty);
+    }
+    if (totalClicks >= 1000 && !achievements.click_1000.unlocked) {
+        achievements.click_1000.unlocked = true;
+        money += achievements.click_1000.reward;
+        showAchievementNotification(achievements.click_1000.name, achievements.click_1000.reward, achievements.click_1000.difficulty);
+    }
+    if (type === 'addBall') {
+        lastBallAddTime = Date.now();
+        if (achievements.strategy_ball_128.timerActive) {
+            achievements.strategy_ball_128.timerActive = false;
+        }
+    }
+    updateUI();
+}
+function showAchievementNotification(name, reward, difficulty = 'easy') {
+  const notification = document.createElement('div');
+  notification.className = 'achievement-notification';
+  let flair = '🏆';
+  if (difficulty === 'hard') flair = '👑';
+  else if (difficulty === 'medium') flair = '🥈';
+  notification.innerHTML = `
+    <div class="achievement-content">
+      <span class="achievement-icon">${flair}</span>
+      <div class="achievement-text">
+        <div class="achievement-title">${name}</div>
+        <div class="achievement-desc">You earned +${formatMoney(reward)}$</div>
+      </div>
+    </div>
+  `;
+  notificationContainer.appendChild(notification);
+  setTimeout(() => {
+    notification.classList.add('show');
+  }, 10);
+  setTimeout(() => {
+    notification.classList.remove('show');
+    setTimeout(() => {
+      notification.remove();
+    }, 300);
+  }, 5000);
+}
 // =================================================================
-// 4. GAME LOGIC
+// 5. GAME LOGIC
 // =================================================================
-// Spawn Ball - Sekarang membuat elemen bola dan menyimpannya
 function spawnBall() {
   if (availableBalls <= 0) return;
-
+  if (achievements.strategy_ball_128.unlocked === false && !achievements.strategy_ball_128.timerActive) {
+      achievements.strategy_ball_128.timerActive = true;
+      achievements.strategy_ball_128.timerStart = Date.now();
+  }
   const x = Math.random() * (gameArea.clientWidth - 30);
   const y = Math.random() * (gameArea.clientHeight - 30);
-
   const speedMult = getBallSpeedMultiplier(2);
   const vx = (Math.random() - 0.5) * 5 * speedMult;
   const vy = (Math.random() - 0.5) * 5 * speedMult;
-
   const ball = {
     x,
     y,
@@ -311,129 +575,62 @@ function spawnBall() {
     value: 2,
     radius: getBallSize(2) / 2,
     trail: [],
-    element: null, // Akan diisi nanti
-    valueLabel: null // Akan diisi nanti
+    element: null,
+    valueLabel: null
   };
-
-  // Buat elemen bola
   const ballEl = document.createElement('div');
   ballEl.className = 'ball';
   ballEl.style.left = `${ball.x}px`;
   ballEl.style.top = `${ball.y}px`;
   ballEl.style.width = `${getBallSize(ball.value)}px`;
   ballEl.style.height = `${getBallSize(ball.value)}px`;
-  ballEl.style.borderRadius = '50%';
   ballEl.style.background = getBallGradient(ball.value);
-  // Set glow
-  const intensity = getGlowIntensity(ball.value);
-  ballEl.style.boxShadow = `0 0 ${intensity}px ${getBallColorFromGradient(ball.value)}, 0 0 ${intensity * 2}px ${getBallColorFromGradient(ball.value)}`;
-  // Set pulsing animation
-  const pulseSpeed = getBallPulseSpeed(ball.value);
-  ballEl.style.animation = `pulse ${pulseSpeed}s infinite`;
-  ballEl.textContent = ball.value;
-
-  // Add bloom effect
-  const bloomSize = getBloomSize(ball.value);
-  const bloomEl = document.createElement('div');
-  bloomEl.style.position = 'absolute';
-  bloomEl.style.top = '50%';
-  bloomEl.style.left = '50%';
-  bloomEl.style.transform = 'translate(-50%, -50%)';
-  bloomEl.style.width = `${getBallSize(ball.value) + bloomSize}px`;
-  bloomEl.style.height = `${getBallSize(ball.value) + bloomSize}px`;
-  bloomEl.style.borderRadius = '50%';
-  bloomEl.style.background = getBallGradient(ball.value);
-  bloomEl.style.filter = `blur(${bloomSize / 3}px)`;
-  bloomEl.style.zIndex = '-1';
-  ballEl.appendChild(bloomEl);
-
-  // Add halo effect
-  const haloSize = getHaloSize(ball.value);
-  const haloEl = document.createElement('div');
-  haloEl.style.position = 'absolute';
-  haloEl.style.top = '50%';
-  haloEl.style.left = '50%';
-  haloEl.style.transform = 'translate(-50%, -50%)';
-  haloEl.style.width = `${getBallSize(ball.value) + haloSize}px`;
-  haloEl.style.height = `${getBallSize(ball.value) + haloSize}px`;
-  haloEl.style.borderRadius = '50%';
-  haloEl.style.background = getBallGradient(ball.value);
-  haloEl.style.filter = `blur(${haloSize / 4}px)`;
-  haloEl.style.zIndex = '-2';
-  ballEl.appendChild(haloEl);
-
-  // Add shine effect
-  const shineSpeed = getShineSpeed(ball.value);
   const shineEl = document.createElement('div');
   shineEl.className = 'shine';
-  const style = document.createElement('style');
-  style.textContent = `
-    .shine-${ball.value} {
-      animation: rotate ${shineSpeed}s linear infinite;
-    }
-  `;
-  document.head.appendChild(style);
-  shineEl.classList.add(`shine-${ball.value}`);
+  const speedClass = `shine-speed-${ball.value}` || 'shine-speed-default';
+  shineEl.classList.add(speedClass);
   ballEl.appendChild(shineEl);
-
-  // Add value label above
   const valueLabel = document.createElement('div');
   valueLabel.className = 'ball-value';
   valueLabel.textContent = ball.value;
   ballEl.appendChild(valueLabel);
-
+  applyGraphicSettingsToBall(ballEl, ball.value);
   gameArea.appendChild(ballEl);
-
-  // Simpan referensi elemen ke objek bola
   ball.element = ballEl;
   ball.valueLabel = valueLabel;
-
   balls.push(ball);
   availableBalls--;
   updateUI();
 }
-
-// Show coin pop animation
 function showCoinPop(x, y, amount) {
-  const coin = document.createElement('div');
-  coin.className = 'coin-pop';
+  const coin = getFromPool(coinPopPool, 'coin-pop', gameArea);
+  if (!coin) return;
   coin.textContent = `+${amount}`;
   coin.style.left = `${x}px`;
   coin.style.top = `${y}px`;
-
-  gameArea.appendChild(coin);
-
-  // Remove after animation
+  coin.style.animation = 'none';
+  coin.offsetHeight;
+  coin.style.animation = 'floatUp 1s forwards';
   setTimeout(() => {
-    coin.remove();
+    returnToPool(coin, coinPopPool);
   }, 1000);
 }
-
-// Check for mergeable balls - Perbarui logika merge untuk menghapus elemen DOM juga
 function checkMerges() {
   for (let i = balls.length - 1; i >= 0; i--) {
     for (let j = i - 1; j >= 0; j--) {
       const ball1 = balls[i];
       const ball2 = balls[j];
-
-      // Calculate distance
       const dx = ball1.x - ball2.x;
       const dy = ball1.y - ball2.y;
       const distance = Math.sqrt(dx * dx + dy * dy);
-
-      // If same value and close enough (adjust distance based on ball size)
       const minDistance = (getBallSize(ball1.value) / 2) + (getBallSize(ball2.value) / 2);
       if (ball1.value === ball2.value && distance < minDistance) {
-        // Create new merged ball
         const newValue = ball1.value * 2;
         const newX = (ball1.x + ball2.x) / 2;
         const newY = (ball1.y + ball2.y) / 2;
-
-        // Use new speed multiplier for merged ball
         const speedMult = getBallSpeedMultiplier(newValue);
         const newVx = (ball1.vx + ball2.vx) / 2 * speedMult;
         const newVy = (ball1.vy + ball2.vy) / 2 * speedMult;
-
         const newBall = {
           x: newX,
           y: newY,
@@ -442,137 +639,72 @@ function checkMerges() {
           value: newValue,
           radius: getBallSize(newValue) / 2,
           trail: [],
-          element: null, // Akan diisi nanti
-          valueLabel: null // Akan diisi nanti
+          element: null,
+          valueLabel: null
         };
-
-        // Buat elemen bola baru untuk merged ball (mirip spawnBall)
         const newBallEl = document.createElement('div');
         newBallEl.className = 'ball merge-effect';
         newBallEl.style.left = `${newX}px`;
         newBallEl.style.top = `${newY}px`;
         newBallEl.style.width = `${getBallSize(newValue)}px`;
         newBallEl.style.height = `${getBallSize(newValue)}px`;
-        newBallEl.style.borderRadius = '50%';
         newBallEl.style.background = getBallGradient(newValue);
-        // Set glow for merged ball
-        const intensity = getGlowIntensity(newValue);
-        newBallEl.style.boxShadow = `0 0 ${intensity}px ${getBallColorFromGradient(newValue)}, 0 0 ${intensity * 2}px ${getBallColorFromGradient(newValue)}`;
-        // Set pulsing for merged ball
-        const pulseSpeed = getBallPulseSpeed(newValue);
-        newBallEl.style.animation = `pulse ${pulseSpeed}s infinite`;
-        // Set bloom for merged ball
-        const bloomSize = getBloomSize(newValue);
-        const bloomEl = document.createElement('div');
-        bloomEl.style.position = 'absolute';
-        bloomEl.style.top = '50%';
-        bloomEl.style.left = '50%';
-        bloomEl.style.transform = 'translate(-50%, -50%)';
-        bloomEl.style.width = `${getBallSize(newValue) + bloomSize}px`;
-        bloomEl.style.height = `${getBallSize(newValue) + bloomSize}px`;
-        bloomEl.style.borderRadius = '50%';
-        bloomEl.style.background = getBallGradient(newValue);
-        bloomEl.style.filter = `blur(${bloomSize / 3}px)`;
-        bloomEl.style.zIndex = '-1';
-        newBallEl.appendChild(bloomEl);
-        // Set halo for merged ball
-        const haloSize = getHaloSize(newValue);
-        const haloEl = document.createElement('div');
-        haloEl.style.position = 'absolute';
-        haloEl.style.top = '50%';
-        haloEl.style.left = '50%';
-        haloEl.style.transform = 'translate(-50%, -50%)';
-        haloEl.style.width = `${getBallSize(newValue) + haloSize}px`;
-        haloEl.style.height = `${getBallSize(newValue) + haloSize}px`;
-        haloEl.style.borderRadius = '50%';
-        haloEl.style.background = getBallGradient(newValue);
-        haloEl.style.filter = `blur(${haloSize / 4}px)`;
-        haloEl.style.zIndex = '-2';
-        newBallEl.appendChild(haloEl);
-        // Set shine for merged ball
-        const shineSpeed = getShineSpeed(newValue);
         const shineEl = document.createElement('div');
         shineEl.className = 'shine';
-        const style = document.createElement('style');
-        style.textContent = `
-          .shine-${newValue} {
-            animation: rotate ${shineSpeed}s linear infinite;
-          }
-        `;
-        document.head.appendChild(style);
-        shineEl.classList.add(`shine-${newValue}`);
+        const speedClass = `shine-speed-${newValue}` || 'shine-speed-default';
+        shineEl.classList.add(speedClass);
         newBallEl.appendChild(shineEl);
-        newBallEl.textContent = newValue;
-
-        // Add value label above merged ball
         const valueLabel = document.createElement('div');
         valueLabel.className = 'ball-value';
         valueLabel.textContent = newValue;
         newBallEl.appendChild(valueLabel);
-
+        applyGraphicSettingsToBall(newBallEl, newValue, true);
         gameArea.appendChild(newBallEl);
-
-        // Simpan referensi elemen ke objek bola baru
         newBall.element = newBallEl;
         newBall.valueLabel = valueLabel;
-
-        // Remove old balls (hapus dari array dan DOM)
         const ballToRemove = balls.splice(Math.max(i, j), 1)[0];
         if (ballToRemove.element) ballToRemove.element.remove();
         const ballToRemove2 = balls.splice(Math.min(i, j), 1)[0];
         if (ballToRemove2.element) ballToRemove2.element.remove();
-
-        // Add new ball
         balls.push(newBall);
-
-        // Hapus efek merge setelah selesai
         setTimeout(() => {
           if (newBallEl) newBallEl.remove();
-          // Tidak perlu renderPins() lagi karena kita update elemen langsung
         }, 500);
-
-        // Earn money from merge
         money += newValue * ballProfit;
         showCoinPop(newX, newY, formatShortMoney(newValue * ballProfit));
         updateUI();
-
-        // Update merge counter
         totalMerges++;
         checkAchievements('merge', newValue);
       }
     }
   }
 }
-
-// Game Loop — Update ball positions and check collisions - Sekarang hanya update elemen DOM
 function startGameLoop() {
-  // Gunakan requestAnimationFrame alih-alih setInterval
   function gameLoop() {
     balls.forEach((ball, i) => {
-      // Add current position to trail (opsional, bisa dihapus untuk performa lebih tinggi)
+      const maxTrailLength = getBallTrailCount();
       ball.trail.push({ x: ball.x + ball.radius, y: ball.y + ball.radius, opacity: 0.8 });
-
-      // Keep trail length max 10 (opsional)
-      if (ball.trail.length > 10) {
-        ball.trail.shift();
+      if (ball.trail.length > maxTrailLength) {
+          ball.trail.shift();
       }
-
-      // Move ball with its speed multiplier
+      if (maxTrailLength > 0) {
+          ball.trail.forEach((point, idx) => {
+              const opacity = (idx / ball.trail.length) * 0.8;
+              if (Math.random() < 0.3) {
+                  createTrailDot(point.x, point.y, getBallColorFromGradient(ball.value), opacity);
+              }
+          });
+      }
       const speedMult = getBallSpeedMultiplier(ball.value);
       ball.x += ball.vx / speedMult;
       ball.y += ball.vy / speedMult;
-
-      // Update posisi elemen bola secara langsung
       if (ball.element) {
         ball.element.style.left = `${ball.x}px`;
         ball.element.style.top = `${ball.y}px`;
-        // Update nilai label jika berubah (meskipun seharusnya tidak dalam loop ini)
         if (ball.valueLabel) {
             ball.valueLabel.textContent = ball.value;
         }
       }
-
-      // Check boundaries (adjust for ball size)
       const ballSize = getBallSize(ball.value);
       if (ball.x <= 0 || ball.x >= gameArea.clientWidth - ballSize) {
         ball.vx *= -1;
@@ -580,36 +712,33 @@ function startGameLoop() {
         totalBounces++;
         checkAchievements('bounce');
       }
-
       if (ball.y <= 0 || ball.y >= gameArea.clientHeight - ballSize) {
         ball.vy *= -1;
         earnMoney(ball.x, ball.y, ball.value);
         totalBounces++;
         checkAchievements('bounce');
       }
-
-      // Sparkle effect
-      if (Math.random() < 0.05) {
-        const sparkleCount = getBallSparkleCount(ball.value);
-        for (let s = 0; s < sparkleCount; s++) {
+      const sparkleCount = getBallSparkleCount(ball.value);
+      for (let s = 0; s < sparkleCount; s++) {
           const offsetX = (Math.random() - 0.5) * ballSize;
           const offsetY = (Math.random() - 0.5) * ballSize;
           createSparkle(ball.x + ball.radius + offsetX, ball.y + ball.radius + offsetY, getBallColorFromGradient(ball.value));
-        }
       }
     });
-
-    // Check for merges
+    if (achievements.strategy_ball_128.timerActive && Date.now() - achievements.strategy_ball_128.timerStart >= 5 * 60 * 1000) {
+        const hasLevel128 = balls.some(b => b.value >= 128);
+        if (hasLevel128) {
+            achievements.strategy_ball_128.unlocked = true;
+            money += achievements.strategy_ball_128.reward;
+            showAchievementNotification(achievements.strategy_ball_128.name, achievements.strategy_ball_128.reward, achievements.strategy_ball_128.difficulty);
+        }
+        achievements.strategy_ball_128.timerActive = false;
+    }
     checkMerges();
-
-    // Panggil lagi frame berikutnya
     requestAnimationFrame(gameLoop);
   }
-
-  // Mulai loop
   requestAnimationFrame(gameLoop);
 }
-
 function earnMoney(x, y, value) {
   const profit = value * ballProfit;
   money += profit;
@@ -617,20 +746,19 @@ function earnMoney(x, y, value) {
   updateUI();
   checkAchievements('money');
 }
-
 // =================================================================
-// 5. UPGRADES & ACTIONS
+// 6. UPGRADES & ACTIONS
 // =================================================================
 function addPin() {
   availableBalls += 1;
   updateUI();
 }
-
 function applyUpgrade(type) {
   switch (type) {
     case 'addBall':
       availableBalls += 1;
       spawnBall();
+      checkAchievements('addBall');
       break;
     case 'ballProfit':
       ballProfit += 1;
@@ -647,105 +775,32 @@ function applyUpgrade(type) {
       break;
   }
 }
-
 function mergePins() {
   alert("Merge Pins feature coming soon!");
 }
-
-// =================================================================
-// 6. ACHIEVEMENTS
-// =================================================================
-function checkAchievements(type, value = null) {
-  if (type === 'merge' && !achievements.first_merge.unlocked) {
-    achievements.first_merge.unlocked = true;
-    money += achievements.first_merge.reward;
-    showAchievementNotification(achievements.first_merge.name, achievements.first_merge.reward);
-  }
-
-  if (type === 'money' && money >= 100000 && !achievements.money_100k.unlocked) {
-    achievements.money_100k.unlocked = true;
-    money += achievements.money_100k.reward;
-    showAchievementNotification(achievements.money_100k.name, achievements.money_100k.reward);
-  }
-
-  if (type === 'merge' && value >= 64 && !achievements.ball_level_64.unlocked) {
-    achievements.ball_level_64.unlocked = true;
-    money += achievements.ball_level_64.reward;
-    showAchievementNotification(achievements.ball_level_64.name, achievements.ball_level_64.reward);
-  }
-
-  if (type === 'merge' && totalMerges >= 100 && !achievements.merge_100.unlocked) {
-    achievements.merge_100.unlocked = true;
-    money += achievements.merge_100.reward;
-    showAchievementNotification(achievements.merge_100.name, achievements.merge_100.reward);
-  }
-
-  if (type === 'bounce' && totalBounces >= 1000 && !achievements.bounce_1000.unlocked) {
-    achievements.bounce_1000.unlocked = true;
-    money += achievements.bounce_1000.reward;
-    showAchievementNotification(achievements.bounce_1000.name, achievements.bounce_1000.reward);
-  }
-
-  updateUI();
-}
-
-function showAchievementNotification(name, reward) {
-  const notification = document.createElement('div');
-  notification.className = 'achievement-notification';
-  notification.innerHTML = `
-    <div class="achievement-content">
-      <span class="achievement-icon">🏆</span>
-      <div class="achievement-text">
-        <div class="achievement-title">${name}</div>
-        <div class="achievement-desc">You earned +${formatMoney(reward)}$</div>
-      </div>
-    </div>
-  `;
-
-  notificationContainer.appendChild(notification);
-
-  // Trigger animation
-  setTimeout(() => {
-    notification.classList.add('show');
-  }, 10);
-
-  // Remove after 5 seconds
-  setTimeout(() => {
-    notification.classList.remove('show');
-    setTimeout(() => {
-      notification.remove();
-    }, 300); // Wait for animation to finish
-  }, 5000);
-}
-
 // =================================================================
 // 7. MINI GAME
 // =================================================================
 function startMiniGame() {
-  // Reset
   minigameResult.textContent = '';
   colorOptionsEl.innerHTML = '';
-
-  // Pick a random ball from the game
   if (balls.length === 0) {
     minigameResult.textContent = 'No balls to guess! Merge some first.';
     return;
   }
-
   const randomBall = balls[Math.floor(Math.random() * balls.length)];
   currentBallColor = getBallColorFromGradient(randomBall.value);
   currentBallName = getBallColorName(randomBall.value);
-
-  // Display ball
   ballDisplay.style.background = getBallGradient(randomBall.value);
-  ballDisplay.style.boxShadow = `0 0 15px ${currentBallColor}`;
-
-  // Determine number of options based on mode
+  if (graphicQuality !== 'ultra_low' && effectSettings.glow) {
+      ballDisplay.style.filter = `drop-shadow(0 0 15px ${currentBallColor})`;
+  } else {
+      ballDisplay.style.filter = 'none';
+  }
   const numOptions = isHardMode ? 6 : 4;
   const correctIndex = Math.floor(Math.random() * numOptions);
   const colors = ['Merah', 'Oranye', 'Kuning', 'Hijau', 'Biru', 'Ungu', 'Pink', 'Cyan', 'Abu', 'Emas'];
   const options = [];
-
   for (let i = 0; i < numOptions; i++) {
     if (i === correctIndex) {
       options.push(currentBallName);
@@ -757,14 +812,11 @@ function startMiniGame() {
       options.push(randomColor);
     }
   }
-
-  // Render options
   options.forEach(color => {
     const option = document.createElement('div');
     option.className = 'color-option';
     option.style.backgroundColor = getColorHexFromName(color);
     option.dataset.name = color;
-
     option.addEventListener('click', () => {
       if (option.dataset.name === currentBallName) {
         currentStreak++;
@@ -777,20 +829,16 @@ function startMiniGame() {
       } else {
         minigameResult.innerHTML = `Salah! Jawaban benar: ${currentBallName}. Streak reset. ${isHardMode ? '<span style="color: red;">[HARD MODE]</span>' : ''}`;
         minigameResult.style.color = 'red';
-        currentStreak = 0; // Reset streak
+        currentStreak = 0;
         updateUI();
       }
-
-      // Disable all options
       document.querySelectorAll('.color-option').forEach(opt => {
         opt.style.pointerEvents = 'none';
       });
     });
-
     colorOptionsEl.appendChild(option);
   });
 }
-
 function getColorHexFromName(name) {
   const colorMap = {
     'Merah': '#FF5722',
@@ -804,60 +852,40 @@ function getColorHexFromName(name) {
     'Abu': '#607D8B',
     'Emas': '#FFD700'
   };
-
   return colorMap[name] || '#FFFFFF';
 }
-
 // =================================================================
-// 8. UI RENDERING (Hanya render saat spawn/hapus, bukan setiap frame)
+// 8. UI RENDERING
 // =================================================================
 function updateUI() {
   moneyEl.textContent = formatMoney(money);
   levelEl.textContent = `Level ${level}`;
-
-  // Update prices
   document.getElementById('addBallPrice').textContent = formatMoney(calculateUpgradeCost('addBall'));
   document.getElementById('ballProfitPrice').textContent = formatMoney(calculateUpgradeCost('ballProfit'));
   document.getElementById('addPinPrice').textContent = formatMoney(calculateUpgradeCost('addPin'));
   document.getElementById('mergePinsPrice').textContent = formatMoney(calculateUpgradeCost('mergePins'));
-
-  // Update button states
   document.querySelectorAll('.upgrade').forEach(btn => {
     const upgrade = btn.dataset.upgrade;
     const cost = calculateUpgradeCost(upgrade);
     btn.disabled = money < cost;
   });
-
   autoSpawnBtn.disabled = !canAffordAutoSpawn();
   autoSpawnBtn.textContent = autoSpawnActive ? '🔄 AUTO SPAWN (ON)' : '🔄 AUTO SPAWN';
-
-  // Update streak display
   streakDisplay.textContent = currentStreak;
-
-  // Update hard mode toggle
   hardModeToggle.checked = isHardMode;
-
-  // Update achievement list if modal is open
   if (achievementModal.style.display === 'flex') {
     renderAchievements();
   }
 }
-
-// Render pins (grid of dots) - Sekarang hanya render sekali saat load
 function renderPins() {
   const pinGrid = document.querySelector('.pin-grid');
   pinGrid.innerHTML = '';
-
   for (let i = 0; i < 25; i++) {
     const dot = document.createElement('div');
     dot.className = 'pin-dot';
     pinGrid.appendChild(dot);
   }
-
-  // Render balls - Hanya saat awal, setelah load
   balls.forEach(ball => {
-    // Jika elemen bola belum ada (karena spawnBall sudah membuatnya), buat di sini
-    // Ini untuk kasus saat load game dari localStorage
     if (!ball.element) {
         const ballEl = document.createElement('div');
         ballEl.className = 'ball';
@@ -865,152 +893,123 @@ function renderPins() {
         ballEl.style.top = `${ball.y}px`;
         ballEl.style.width = `${getBallSize(ball.value)}px`;
         ballEl.style.height = `${getBallSize(ball.value)}px`;
-        ballEl.style.borderRadius = '50%';
         ballEl.style.background = getBallGradient(ball.value);
-        // Set glow
-        const intensity = getGlowIntensity(ball.value);
-        ballEl.style.boxShadow = `0 0 ${intensity}px ${getBallColorFromGradient(ball.value)}, 0 0 ${intensity * 2}px ${getBallColorFromGradient(ball.value)}`;
-        // Set pulsing animation
-        const pulseSpeed = getBallPulseSpeed(ball.value);
-        ballEl.style.animation = `pulse ${pulseSpeed}s infinite`;
-        ballEl.textContent = ball.value;
-
-        // Add bloom effect
-        const bloomSize = getBloomSize(ball.value);
-        const bloomEl = document.createElement('div');
-        bloomEl.style.position = 'absolute';
-        bloomEl.style.top = '50%';
-        bloomEl.style.left = '50%';
-        bloomEl.style.transform = 'translate(-50%, -50%)';
-        bloomEl.style.width = `${getBallSize(ball.value) + bloomSize}px`;
-        bloomEl.style.height = `${getBallSize(ball.value) + bloomSize}px`;
-        bloomEl.style.borderRadius = '50%';
-        bloomEl.style.background = getBallGradient(ball.value);
-        bloomEl.style.filter = `blur(${bloomSize / 3}px)`;
-        bloomEl.style.zIndex = '-1';
-        ballEl.appendChild(bloomEl);
-
-        // Add halo effect
-        const haloSize = getHaloSize(ball.value);
-        const haloEl = document.createElement('div');
-        haloEl.style.position = 'absolute';
-        haloEl.style.top = '50%';
-        haloEl.style.left = '50%';
-        haloEl.style.transform = 'translate(-50%, -50%)';
-        haloEl.style.width = `${getBallSize(ball.value) + haloSize}px`;
-        haloEl.style.height = `${getBallSize(ball.value) + haloSize}px`;
-        haloEl.style.borderRadius = '50%';
-        haloEl.style.background = getBallGradient(ball.value);
-        haloEl.style.filter = `blur(${haloSize / 4}px)`;
-        haloEl.style.zIndex = '-2';
-        ballEl.appendChild(haloEl);
-
-        // Add shine effect
-        const shineSpeed = getShineSpeed(ball.value);
         const shineEl = document.createElement('div');
         shineEl.className = 'shine';
-        const style = document.createElement('style');
-        style.textContent = `
-          .shine-${ball.value} {
-            animation: rotate ${shineSpeed}s linear infinite;
-          }
-        `;
-        document.head.appendChild(style);
-        shineEl.classList.add(`shine-${ball.value}`);
+        const speedClass = `shine-speed-${ball.value}` || 'shine-speed-default';
+        shineEl.classList.add(speedClass);
         ballEl.appendChild(shineEl);
-
-        // Add value label above
         const valueLabel = document.createElement('div');
         valueLabel.className = 'ball-value';
         valueLabel.textContent = ball.value;
         ballEl.appendChild(valueLabel);
-
+        applyGraphicSettingsToBall(ballEl, ball.value);
         gameArea.appendChild(ballEl);
-
-        // Simpan referensi elemen ke objek bola
         ball.element = ballEl;
         ball.valueLabel = valueLabel;
+    } else {
+        applyGraphicSettingsToBall(ball.element, ball.value);
     }
   });
 }
-
-// Render Achievement List
 function renderAchievements() {
   const list = document.getElementById('achievementList');
   list.innerHTML = '';
-
   for (const key in achievements) {
     const ach = achievements[key];
+    if (ach.counter !== undefined) continue;
     const item = document.createElement('div');
     item.className = `achievement-item ${ach.unlocked ? 'unlocked' : 'locked'}`;
-
     const icon = document.createElement('div');
     icon.className = 'achievement-icon';
     icon.textContent = ach.unlocked ? '✅' : '🔒';
-
     const info = document.createElement('div');
     info.className = 'achievement-info';
     info.innerHTML = `
       <div class="achievement-name">${ach.name}</div>
       <div class="achievement-desc">${ach.desc}</div>
     `;
-
     const reward = document.createElement('div');
     reward.className = 'achievement-reward';
     reward.textContent = `+${formatMoney(ach.reward)}`;
-
     item.appendChild(icon);
     item.appendChild(info);
     item.appendChild(reward);
-
     list.appendChild(item);
   }
 }
-
-// Render Update Log
 function renderUpdateLog() {
   updateLogContent.innerHTML = '';
-
   updateLog.forEach(log => {
     const entry = document.createElement('div');
-    entry.className = 'update-log-entry';
-
-    const version = document.createElement('div');
-    version.className = 'update-log-version';
-    version.textContent = log.version;
-
-    const changes = document.createElement('div');
-    changes.className = 'update-log-changes';
-    changes.innerHTML = log.changes.map(c => `• ${c}`).join('<br>');
-
-    entry.appendChild(version);
-    entry.appendChild(changes);
-
+    entry.className = 'update-log-entry-compact';
+    const header = document.createElement('div');
+    header.className = 'update-log-header';
+    header.innerHTML = `<span class="update-log-version">${log.version}</span>`;
+    header.style.cursor = 'pointer';
+    header.style.display = 'flex';
+    header.style.justifyContent = 'space-between';
+    header.style.alignItems = 'center';
+    const changesContainer = document.createElement('div');
+    changesContainer.className = 'update-log-changes-compact';
+    changesContainer.style.display = 'none';
+    changesContainer.style.marginTop = '5px';
+    changesContainer.style.paddingLeft = '10px';
+    log.changes.forEach(change => {
+      const changeDiv = document.createElement('div');
+      changeDiv.style.display = 'flex';
+      changeDiv.style.alignItems = 'flex-start';
+      changeDiv.style.marginBottom = '4px';
+      const tag = document.createElement('span');
+      tag.textContent = change.type.toUpperCase();
+      tag.style.display = 'inline-block';
+      tag.style.padding = '1px 5px';
+      tag.style.borderRadius = '4px';
+      tag.style.fontSize = '0.65rem';
+      tag.style.fontWeight = 'bold';
+      tag.style.marginRight = '6px';
+      tag.style.flexShrink = 0;
+      tag.style.textAlign = 'center';
+      tag.style.minWidth = '40px';
+      tag.style.boxShadow = '0 1px 2px rgba(0, 0, 0, 0.3)';
+      switch (change.type) {
+        case 'update': tag.style.background = 'linear-gradient(135deg, #4CAF50, #2E7D32)'; tag.style.color = 'white'; break;
+        case 'fix': tag.style.background = 'linear-gradient(135deg, #2196F3, #0D47A1)'; tag.style.color = 'white'; break;
+        case 'tweak': tag.style.background = 'linear-gradient(135deg, #FFC107, #FF8F00)'; tag.style.color = 'black'; break;
+        case 'revamp': tag.style.background = 'linear-gradient(135deg, #9C27B0, #6A1B9A)'; tag.style.color = 'white'; break;
+        default: tag.style.background = 'linear-gradient(135deg, #9E9E9E, #616161)'; tag.style.color = 'white';
+      }
+      const text = document.createElement('span');
+      text.textContent = change.text;
+      text.style.fontSize = '0.8rem';
+      text.style.color = '#ddd';
+      changeDiv.appendChild(tag);
+      changeDiv.appendChild(text);
+      changesContainer.appendChild(changeDiv);
+    });
+    header.addEventListener('click', () => {
+        const isHidden = changesContainer.style.display === 'none';
+        changesContainer.style.display = isHidden ? 'block' : 'none';
+    });
+    entry.appendChild(header);
+    entry.appendChild(changesContainer);
     updateLogContent.appendChild(entry);
   });
 }
-
-// Show Update Notification
 function showUpdateNotification() {
   updateNotification.classList.add('show');
-
   updateNotification.onclick = () => {
     updateLogModal.style.display = 'flex';
     renderUpdateLog();
     updateNotification.classList.remove('show');
   };
-
-  // Auto hide after 10 seconds
   setTimeout(() => {
     updateNotification.classList.remove('show');
   }, 10000);
 }
-
-// Show Confirmation Modal
 function showConfirmationModal(message, onConfirm) {
   const modal = document.createElement('div');
   modal.className = 'confirmation-modal';
-
   modal.innerHTML = `
     <div class="confirmation-content">
       <h3>⚠️ CONFIRM</h3>
@@ -1021,23 +1020,18 @@ function showConfirmationModal(message, onConfirm) {
       </div>
     </div>
   `;
-
   document.body.appendChild(modal);
-
   modal.querySelector('.yes').onclick = () => {
     onConfirm();
     modal.remove();
   };
-
   modal.querySelector('.no').onclick = () => {
     modal.remove();
   };
 }
-
 // =================================================================
 // 9. EVENT LISTENERS & INITIAL SETUP
 // =================================================================
-// Add Pin
 document.querySelector('[data-upgrade="addPin"]').addEventListener('click', () => {
   const cost = calculateUpgradeCost('addPin');
   if (money >= cost) {
@@ -1046,13 +1040,10 @@ document.querySelector('[data-upgrade="addPin"]').addEventListener('click', () =
     updateUI();
   }
 });
-
-// Upgrade handlers
 document.querySelectorAll('.upgrade').forEach(btn => {
   btn.addEventListener('click', () => {
     const upgrade = btn.dataset.upgrade;
     const cost = calculateUpgradeCost(upgrade);
-
     if (money >= cost) {
       money -= cost;
       applyUpgrade(upgrade);
@@ -1060,67 +1051,93 @@ document.querySelectorAll('.upgrade').forEach(btn => {
     }
   });
 });
-
-// Add Event Listeners for Mini Game Modal
 minigameBtn.addEventListener('click', () => {
   minigameModal.style.display = 'flex';
   startMiniGame();
 });
-
 minigamePlayBtn.addEventListener('click', () => {
   startMiniGame();
 });
-
 closeMinigameModal.addEventListener('click', () => {
   minigameModal.style.display = 'none';
 });
-
 hardModeToggle.addEventListener('change', () => {
   isHardMode = hardModeToggle.checked;
   updateUI();
 });
-
-// Add Event Listeners for Update Log Modal
 updateLogBtn.addEventListener('click', () => {
   updateLogModal.style.display = 'flex';
   renderUpdateLog();
 });
-
 closeUpdateLogModal.addEventListener('click', () => {
   updateLogModal.style.display = 'none';
 });
-
-// Add Event Listeners for Achievement Modal
 achievementBtn.addEventListener('click', () => {
   achievementModal.style.display = 'flex';
   renderAchievements();
 });
-
 closeAchievementModal.addEventListener('click', () => {
   achievementModal.style.display = 'none';
 });
-
-// Add Event Listeners for Reset Progress
 resetProgressBtn.addEventListener('click', () => {
   resetProgress();
 });
-
-// Settings Modal
 settingsBtn.addEventListener('click', () => {
   settingsModal.style.display = 'flex';
+  if (glowIntensitySlider) glowIntensitySlider.value = localStorage.getItem('glowIntensity') || 100;
+  if (sparkleRateSlider) sparkleRateSlider.value = localStorage.getItem('sparkleRate') || 50;
+  if (graphicQualitySelect) graphicQualitySelect.value = graphicQuality;
+  if (glowToggle) glowToggle.checked = effectSettings.glow;
+  if (pulseToggle) pulseToggle.checked = effectSettings.pulse;
+  if (shineToggle) shineToggle.checked = effectSettings.shine;
+  if (sparkleToggle) sparkleToggle.checked = effectSettings.sparkle;
+  if (trailToggle) trailToggle.checked = effectSettings.trail;
+  if (themeSelect) themeSelect.value = theme;
 });
-
 closeModal.addEventListener('click', () => {
   settingsModal.style.display = 'none';
 });
-
 window.addEventListener('click', (e) => {
   if (e.target === settingsModal) {
     settingsModal.style.display = 'none';
   }
 });
-
-// Auto Spawn Button
+if (graphicQualitySelect) {
+    graphicQualitySelect.addEventListener('change', () => {
+        graphicQuality = graphicQualitySelect.value;
+        localStorage.setItem('graphicQuality', graphicQuality);
+        updateGraphicSettings();
+    });
+}
+if (glowToggle) glowToggle.addEventListener('change', () => { effectSettings.glow = glowToggle.checked; localStorage.setItem('effectGlow', effectSettings.glow); updateGraphicSettings(); });
+if (pulseToggle) pulseToggle.addEventListener('change', () => { effectSettings.pulse = pulseToggle.checked; localStorage.setItem('effectPulse', effectSettings.pulse); updateGraphicSettings(); });
+if (shineToggle) shineToggle.addEventListener('change', () => { effectSettings.shine = shineToggle.checked; localStorage.setItem('effectShine', effectSettings.shine); updateGraphicSettings(); });
+if (sparkleToggle) sparkleToggle.addEventListener('change', () => { effectSettings.sparkle = sparkleToggle.checked; localStorage.setItem('effectSparkle', effectSettings.sparkle); updateGraphicSettings(); });
+if (trailToggle) trailToggle.addEventListener('change', () => { effectSettings.trail = trailToggle.checked; localStorage.setItem('effectTrail', effectSettings.trail); updateGraphicSettings(); });
+if (glowIntensitySlider) {
+    glowIntensitySlider.addEventListener('input', () => {
+        localStorage.setItem('glowIntensity', glowIntensitySlider.value);
+        if (graphicQuality !== 'ultra_low' && effectSettings.glow) {
+            balls.forEach(ball => {
+                if (ball.element) {
+                    applyGraphicSettingsToBall(ball.element, ball.value);
+                }
+            });
+        }
+    });
+}
+if (sparkleRateSlider) {
+    sparkleRateSlider.addEventListener('input', () => {
+        localStorage.setItem('sparkleRate', sparkleRateSlider.value);
+    });
+}
+if (themeSelect) {
+    themeSelect.addEventListener('change', () => {
+        theme = themeSelect.value;
+        localStorage.setItem('theme', theme);
+        applyTheme();
+    });
+}
 autoSpawnBtn.addEventListener('click', () => {
   if (autoSpawnActive) {
     stopAutoSpawn();
@@ -1128,7 +1145,6 @@ autoSpawnBtn.addEventListener('click', () => {
     startAutoSpawn();
   }
 });
-
 function startAutoSpawn() {
   autoSpawnActive = true;
   autoSpawnInterval = setInterval(() => {
@@ -1138,7 +1154,6 @@ function startAutoSpawn() {
   }, autoSpawnRate);
   updateUI();
 }
-
 function stopAutoSpawn() {
   autoSpawnActive = false;
   if (autoSpawnInterval) {
@@ -1147,32 +1162,20 @@ function stopAutoSpawn() {
   }
   updateUI();
 }
-
 function canAffordAutoSpawn() {
   return money >= 10000;
 }
-
-// --- IMPLEMENTASI TOMBOL MAX & x3 ---
-// MAX Button
 maxBtn.addEventListener('click', () => {
-  // Spawn semua bola yang tersedia sekaligus
   while (availableBalls > 0) {
     spawnBall();
   }
-  updateUI(); // Pastikan UI diperbarui setelah spawn
+  updateUI();
 });
-
-// x3 Button
 x3Btn.addEventListener('click', () => {
-  // Gandakan kecepatan semua bola yang aktif sebesar 3x
   balls.forEach(ball => {
-    // Kalikan kecepatan dengan 3
-    // Kita kalikan vx dan vy langsung agar efek terlihat langsung
-    // Pastikan tidak melebihi batas maksimum yang wajar
     const newVx = ball.vx * 3;
     const newVy = ball.vy * 3;
-    // Batasi kecepatan maksimum untuk mencegah bola terlalu cepat
-    const maxSpeed = 30; // Atur kecepatan maksimum yang wajar
+    const maxSpeed = 30;
     const currentSpeed = Math.sqrt(newVx * newVx + newVy * newVy);
     if (currentSpeed > maxSpeed) {
       const scale = maxSpeed / currentSpeed;
@@ -1183,17 +1186,13 @@ x3Btn.addEventListener('click', () => {
        ball.vy = newVy;
     }
   });
-  // Tidak perlu updateUI() untuk perubahan kecepatan
 });
-// --- AKHIR IMPLEMENTASI ---
-
 function resetProgress() {
   showConfirmationModal("Are you sure you want to reset ALL progress? This cannot be undone.", () => {
-    // Reset all game state
     money = 0;
     level = 1;
     ballProfit = 1;
-    availableBalls = 1; // Start with 1 ball
+    availableBalls = 1;
     pins = [];
     balls = [];
     autoSpawnActive = false;
@@ -1201,32 +1200,26 @@ function resetProgress() {
     totalBounces = 0;
     currentStreak = 0;
     isHardMode = false;
-
-    // Reset achievements
     for (const key in achievements) {
       achievements[key].unlocked = false;
+      if (achievements[key].counter !== undefined) achievements[key].counter = 0;
+      if (achievements[key].timerActive !== undefined) achievements[key].timerActive = false;
+      if (achievements[key].timerStart !== undefined) achievements[key].timerStart = 0;
     }
-
-    // Stop auto spawn if active
+    totalClicks = 0;
+    lastBallAddTime = Date.now();
     if (autoSpawnInterval) {
       clearInterval(autoSpawnInterval);
       autoSpawnInterval = null;
     }
-
-    // Hapus semua elemen bola dari DOM
     document.querySelectorAll('.ball').forEach(b => b.remove());
-
     updateUI();
-    renderPins(); // Render ulang grid dan bola kosong (atau hanya grid)
+    renderPins();
     saveGame();
-
-    // Close modal and show notification
     settingsModal.style.display = 'none';
     alert("Progress has been reset! Start fresh and have fun!");
   });
 }
-
-// Load game
 window.addEventListener('load', () => {
   const saved = localStorage.getItem('bounceGameState');
   if (saved) {
@@ -1236,48 +1229,73 @@ window.addEventListener('load', () => {
     ballProfit = state.ballProfit || 1;
     availableBalls = state.availableBalls || 5;
     pins = state.pins || [];
-    balls = state.balls || []; // Array bola dari localStorage
+    balls = state.balls || [];
     autoSpawnActive = state.autoSpawnActive || false;
     totalMerges = state.totalMerges || 0;
     totalBounces = state.totalBounces || 0;
     currentStreak = state.currentStreak || 0;
     isHardMode = state.isHardMode || false;
-
+    totalClicks = state.totalClicks || 0;
+    lastBallAddTime = state.lastBallAddTime || Date.now();
     if (autoSpawnActive) {
       startAutoSpawn();
     }
   }
-
   const savedAchievements = localStorage.getItem('achievements');
   if (savedAchievements) {
-    achievements = { ...achievements, ...JSON.parse(savedAchievements) };
+    const savedAch = JSON.parse(savedAchievements);
+    for (const key in savedAch) {
+        if (achievements[key]) {
+            achievements[key].unlocked = savedAch[key].unlocked;
+            if (savedAch[key].counter !== undefined) achievements[key].counter = savedAch[key].counter;
+            if (savedAch[key].timerActive !== undefined) achievements[key].timerActive = savedAch[key].timerActive;
+            if (savedAch[key].timerStart !== undefined) achievements[key].timerStart = savedAch[key].timerStart;
+        }
+    }
   }
-
-  // Check for update
+  const savedGraphicQuality = localStorage.getItem('graphicQuality');
+  if (savedGraphicQuality && ['low', 'medium', 'high', 'ultra_low'].includes(savedGraphicQuality)) {
+      graphicQuality = savedGraphicQuality;
+  } else {
+      graphicQuality = 'high';
+  }
+  const savedGlowIntensity = localStorage.getItem('glowIntensity');
+  const savedSparkleRate = localStorage.getItem('sparkleRate');
+  if (savedGlowIntensity) glowIntensitySlider.value = savedGlowIntensity;
+  if (savedSparkleRate) sparkleRateSlider.value = savedSparkleRate;
+  const savedEffectGlow = localStorage.getItem('effectGlow');
+  const savedEffectPulse = localStorage.getItem('effectPulse');
+  const savedEffectShine = localStorage.getItem('effectShine');
+  const savedEffectSparkle = localStorage.getItem('effectSparkle');
+  const savedEffectTrail = localStorage.getItem('effectTrail');
+  effectSettings.glow = savedEffectGlow === 'true';
+  effectSettings.pulse = savedEffectPulse === 'true';
+  effectSettings.shine = savedEffectShine === 'true';
+  effectSettings.sparkle = savedEffectSparkle === 'true';
+  effectSettings.trail = savedEffectTrail === 'true';
+  const savedTheme = localStorage.getItem('theme');
+  if (savedTheme && ['dark_purple', 'dark_blue', 'dark_green'].includes(savedTheme)) {
+      theme = savedTheme;
+  } else {
+      theme = 'dark_purple';
+  }
+  applyTheme();
   const lastVersion = localStorage.getItem('lastVersion') || 'Beta 1.0.0';
   if (lastVersion !== currentVersion) {
     showUpdateNotification();
   }
-
   updateUI();
-  renderPins(); // Render grid dan bola dari state
-  startGameLoop(); // Mulai game loop
-
-  // Setup event listeners are defined above
+  renderPins();
+  startGameLoop();
 });
-
-// Save game
 window.addEventListener('beforeunload', () => {
   saveGame();
 });
-
 function saveGame() {
-  // Hapus referensi elemen DOM dari objek bola sebelum disimpan
   const ballsToSave = balls.map(ball => {
-    const { element, valueLabel, ...ballData } = ball; // Hanya ambil data, bukan elemen DOM
+    const { element, valueLabel, ...ballData } = ball;
     return ballData;
   });
-
   localStorage.setItem(
     'bounceGameState',
     JSON.stringify({
@@ -1285,17 +1303,26 @@ function saveGame() {
       level,
       ballProfit,
       pins,
-      balls: ballsToSave, // Simpan data bola tanpa elemen
+      balls: ballsToSave,
       availableBalls,
       autoSpawnActive,
       totalMerges,
       totalBounces,
       currentStreak,
-      isHardMode
+      isHardMode,
+      totalClicks,
+      lastBallAddTime
     })
   );
   localStorage.setItem('achievements', JSON.stringify(achievements));
   localStorage.setItem('lastVersion', currentVersion);
+  if (glowIntensitySlider) localStorage.setItem('glowIntensity', glowIntensitySlider.value);
+  if (sparkleRateSlider) localStorage.setItem('sparkleRate', sparkleRateSlider.value);
+  localStorage.setItem('graphicQuality', graphicQuality);
+  localStorage.setItem('effectGlow', effectSettings.glow);
+  localStorage.setItem('effectPulse', effectSettings.pulse);
+  localStorage.setItem('effectShine', effectSettings.shine);
+  localStorage.setItem('effectSparkle', effectSettings.sparkle);
+  localStorage.setItem('effectTrail', effectSettings.trail);
+  localStorage.setItem('theme', theme);
 }
-
-// updateUI(); // Panggil updateUI setelah semua event listener dan fungsi lainnya didefinisikan
